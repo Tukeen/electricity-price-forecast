@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Secrets
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# Local data and model artifacts
+data/raw/*
+data/processed/*
+models/*
+reports/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!models/.gitkeep
+!reports/.gitkeep
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE and operating system
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
