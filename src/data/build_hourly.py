@@ -52,13 +52,13 @@ def build() -> pd.DataFrame:
     parts = {}
     for (dataset, key), col in SERIES.items():
         s = raw[(raw["dataset"] == dataset) & (raw["series_key"] == key)]
+        s = s[s["timestamp_utc"] >= start]          # <-- najpierw zakres czasu
         if dataset == "prices":
             dropped = s[s["currency"] != "EUR"]
             if len(dropped):
                 print(f"UWAGA: pominięto {len(dropped)} rekordów cen nie-EUR "
                       f"({dropped['resolution'].value_counts().to_dict()})")
             s = s[s["currency"] == "EUR"]
-        s = s[s["timestamp_utc"] >= start]
         parts[col] = aggregate_hourly(s).set_index("timestamp_utc")
 
     idx = pd.date_range(start, parts["price_eur_mwh"].index.max(), freq="h")
