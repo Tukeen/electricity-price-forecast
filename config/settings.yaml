@@ -10,8 +10,9 @@ data:
   freeze_date: null           # data snapshotu danych do testu końcowego (styczeń 2027)
 
 evaluation:
-  warmup: {start: 2020-01-01, end: 2021-12-31}
-  regime_analysis: {start: 2022-01-01, end: 2025-12-31}
+  window_days: 364
+  warmup: {start: 2020-01-01, end: 2020-12-31}
+  regime_analysis: {start: 2021-01-01, end: 2025-12-31}
   validation: {start: 2025-01-01, end: 2025-12-31}   # strojenie i wybór modeli
   test: {start: 2026-01-01, end: 2026-12-31}         # zamknięty sejf: tylko raz, po zamrożeniu kodu
   metrics: [MAE, RMSE, ME, rMAE]
@@ -24,7 +25,7 @@ ingest:
   from_year: 2020     # od tego roku pobieramy nowe dane (starsze pliki cen, 2015-2019, zostają w bazie)
   forward_days: 2     # pobieramy też dobę następną (jutrzejsze ceny i prognozy), o ile już opublikowane
 
-regimes:   # propozycja robocza, zweryfikujemy na wykresach z kroku 4
+regimes:   # granice wg zdarzeń: wzrost cen IX 2021, pierwsza ujemna cena 2023-06-11
   stabilny:   {start: 2020-01-01, end: 2021-08-31}
-  kryzys:     {start: 2021-09-01, end: 2023-06-30}
-  oze_ujemne: {start: 2023-07-01, end: 2026-12-31}
+  kryzys:     {start: 2021-09-01, end: 2023-06-10}
+  oze_ujemne: {start: 2023-06-11, end: 2026-12-31}
