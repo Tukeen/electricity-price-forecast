@@ -17,5 +17,5 @@ class Naive:
         elif self.variant == "weekly":
             lag = 7
         else:
-            lag = 7 if day.dayofweek in (0, 5, 6) else 1
+            lag = 7 if day.day_of_week in (0, 5, 6) else 1
         return info["price"].loc[day - pd.Timedelta(days=lag)].to_numpy()

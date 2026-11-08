@@ -12,3 +12,4 @@ pyarrow
 pyyaml
 statsmodels
 matplotlib
+scikit-learn

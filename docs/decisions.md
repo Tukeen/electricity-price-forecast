@@ -12,3 +12,8 @@ Parametry asinh liczymy w każdym oknie osobno. Parametry z całych danych (a=94
 Doba = 24 wartości (wiersz na dobę, kolumny to godziny lokalne). Zdublowaną godzinę jesienią uśredniamy, brakującą wiosną interpolujemy.
 Cechy budujemy w krokach 6–7, osobno dla każdej klasy modeli, bo ich format się różni. Krok 5 to panele danych, protokół i benchmarki.
 prognozując dobę D, widzimy ceny do doby D−1 i prognozy zapotrzebowania/OZE na dobę D
+asinh z parametrami (mediana, 1,4826·MAD) liczonymi osobno w każdym oknie kalibracji;
+powrót do EUR przez odwrotną transformację (to w przybliżeniu mediana, nie średnia);
+LEAR używa prognoz egzogenicznych tylko z doby D (24 godziny), co jest uproszczeniem względem wersji z literatury;
+wiersze z brakującym PV (przed 2020-04-10) są pomijane przy estymacji, więc wczesny 2021 ma mniej obserwacji;
+jeśli okno ma za mało wierszy (< liczba cech + 10), doba jest pomijana i raport liczy tylko doby wspólne dla wszystkich modeli.

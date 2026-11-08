@@ -16,6 +16,10 @@ def rolling_forecast(model, panels: dict, days, window_days: int, refit_every: i
         if hasattr(model, "fit") and i % refit_every == 0:
             model.fit(info, info["price"].index[-window_days:])
         preds.append(np.asarray(model.predict(info, day), dtype=float))
+        
+        if (i + 1) % 250 == 0:
+            print(f"  {getattr(model, 'name', 'model')}: {i + 1}/{len(days)} dób")
+            
     return pd.DataFrame(preds, index=pd.DatetimeIndex(days, name="delivery_date"), columns=range(24))
 
 
@@ -36,3 +40,13 @@ def save_forecasts(db_path, name: str, pred: pd.DataFrame, price: pd.DataFrame) 
                    SELECT model, CAST(delivery_date AS DATE), CAST(hour_local AS INTEGER), y_pred, y_true
                    FROM long_df""")
     con.close()
+
+
+def load_forecasts(db_path, name: str) -> pd.DataFrame:
+    con = duckdb.connect(str(db_path), read_only=True)
+    df = con.execute("SELECT delivery_date, hour_local, y_pred FROM forecasts WHERE model = ?", [name]).df()
+    con.close()
+    if df.empty:
+        return df
+    df["delivery_date"] = pd.to_datetime(df["delivery_date"])
+    return df.pivot(index="delivery_date", columns="hour_local", values="y_pred").sort_index()

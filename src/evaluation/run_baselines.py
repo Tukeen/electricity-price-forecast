@@ -19,7 +19,7 @@ DEV_END = pd.Timestamp(CFG["evaluation"]["validation"]["end"])
 def main() -> None:
     panels = load_panels()
     price = panels["price"]
-    days = price.loc[price.index[0] + pd.Timedelta(days=7): DEV_END].index
+    days = price.loc[pd.Timestamp(CFG["evaluation"]["regime_analysis"]["start"]): DEV_END].index
 
     models = [Naive("daily"), Naive("weekly"), Naive("mixed")]
     errs = {}
