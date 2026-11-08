@@ -1,7 +1,7 @@
 """Modele ML (XGBoost, MLP; z i bez zmiennych egzogenicznych), ocena 2021-2025 + raport zbiorczy.
 
 python -m src.evaluation.run_ml --models mlp mlp_x --jobs 10
-python -m src.evaluation.run_ml                      # tylko raport z zapisanych prognoz
+python -m src.evaluation.run_ml                         # tylko raport z zapisanych prognoz
 """
 import os
 
@@ -13,36 +13,42 @@ import time
 
 import pandas as pd
 
-from src.evaluation.metrics import errors
+from src.evaluation.metrics import errors, mae
 from src.evaluation.protocol import load_forecasts, rolling_forecast, save_forecasts
 from src.evaluation.report import common_days, dm_table, summarize
 from src.features.panels import DB_PATH, load_panels
 from src.models.mlp import MLPEPF
 from src.models.xgb import XGBoostEPF
+from src.models.prophet_epf import ProphetEPF
 from src.utils.config import PROJECT_ROOT, load_config
 
 CFG = load_config()
 EV = CFG["evaluation"]
-SPECS = {"xgb": ("xgb", False), "xgb_x": ("xgb", True), "mlp": ("mlp", False), "mlp_x": ("mlp", True)}
+SPECS = {"xgb": ("xgb", False), "xgb_x": ("xgb", True), "mlp": ("mlp", False), "mlp_x": ("mlp", True), "prophet": ("prophet", False), "prophet_x": ("prophet", True)}
 ALL = ["naive_daily", "naive_mixed", "arx", "arx_x", "lear", "lear_x", "sarima", "sarimax", "var1",
-       "xgb", "xgb_x", "mlp", "mlp_x"]
+       "xgb", "xgb_x", "mlp", "mlp_x", "prophet", "prophet_x"]
 PAIRS = [("xgb", "naive_mixed"), ("xgb_x", "naive_mixed"), ("xgb_x", "xgb"),
          ("xgb", "arx"), ("xgb_x", "arx_x"), ("xgb", "lear"), ("xgb_x", "lear_x"),
          ("xgb", "sarima"), ("xgb_x", "sarimax"),
          ("mlp", "naive_mixed"), ("mlp_x", "naive_mixed"), ("mlp_x", "mlp"), ("mlp", "xgb"), ("mlp_x", "xgb_x"),
-         ("mlp", "lear"), ("mlp_x", "lear_x"), ("mlp", "sarima"), ("mlp_x", "sarimax")]
-EXOG_PAIRS = [("arx", "arx_x"), ("lear", "lear_x"), ("sarima", "sarimax"), ("xgb", "xgb_x"), ("mlp", "mlp_x")]
+         ("mlp", "lear"), ("mlp_x", "lear_x"), ("mlp", "sarima"), ("mlp_x", "sarimax"),
+         ("prophet", "naive_mixed"), ("prophet_x", "naive_mixed"), ("prophet_x", "prophet"),
+         ("prophet", "lear"), ("prophet_x", "lear_x"), ("prophet", "sarima"), ("prophet_x", "sarimax"),
+         ("prophet", "xgb"), ("prophet_x", "xgb_x")]
+EXOG_PAIRS = [("arx", "arx_x"), ("lear", "lear_x"), ("sarima", "sarimax"), ("xgb", "xgb_x"), ("mlp", "mlp_x"), ("prophet", "prophet_x")]
 
 
 def build(key: str):
     kind, use_exog = SPECS[key]
-    return (XGBoostEPF if kind == "xgb" else MLPEPF)(use_exog, EV["window_days"])
+    cls = {"xgb": XGBoostEPF, "mlp": MLPEPF, "prophet": ProphetEPF}[kind]
+    return cls(use_exog, EV["window_days"])
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--models", nargs="*", default=[], choices=list(SPECS))
     ap.add_argument("--jobs", type=int, default=10)
+    ap.add_argument("--smoke", type=int, default=0)
     args = ap.parse_args()
 
     panels = load_panels()
@@ -53,9 +59,20 @@ def main() -> None:
         model = build(key)
         print(f"== {model.name} ==")
         t0 = time.time()
+        if args.smoke:
+            block = days[: args.smoke]
+            pred = rolling_forecast(model, panels, block, EV["window_days"], n_jobs=args.jobs)
+            ref = load_forecasts(DB_PATH, "naive_mixed").reindex(block)
+            print(f"   {time.time() - t0:.0f} s | MAE {mae(errors(pred, price)):.2f} | naive_mixed "
+                  f"{mae(errors(ref, price)):.2f} | dób z NaN: {int(pred.isna().any(axis=1).sum())}")
+            continue
+        
         pred = rolling_forecast(model, panels, days, EV["window_days"], n_jobs=args.jobs)
         save_forecasts(DB_PATH, model.name, pred, price)
         print(f"   {time.time() - t0:.0f} s")
+
+    if args.smoke:
+        return
 
     errs = {}
     for name in ALL:

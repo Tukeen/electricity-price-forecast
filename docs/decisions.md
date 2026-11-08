@@ -30,3 +30,7 @@ wariant awaryjny SARIMAX (kolejność prób: podstawowy, Powell, prostszy rząd 
 specyfikację MLP: jeden model na wszystkie godziny, one-hot godzin i dni, dwie warstwy (64, 32), średnia z 3 inicjalizacji, early stopping na losowym podzbiorze wierszy treningowych,
 ograniczenie: SARIMA(X) estymowana co 28 dób, pozostałe modele codziennie,
 że wnioski z 7a dotyczące H1–H3 są wstępne (niestrojone hiperparametry, okres rozwojowy 2021–2025, rok 2026 nietknięty).
+SARIMAX: blok 2022-10-07 z ponownej estymacji,
+reguła raportowania: ML porównujemy z najlepszym modelem klasy ekonometrycznej (LEAR/SARIMAX), a nie tylko z SARIMA,
+Prophet z codzienną reestymacją i bez sezonowości rocznej (okno 364 dni),
+wnioski z H1–H3 są wstępne (niestrojone modele, okres rozwojowy 2021–2025, rok 2026 nietknięty).
