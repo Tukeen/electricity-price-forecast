@@ -64,3 +64,18 @@ def load_forecasts(db_path, name: str) -> pd.DataFrame:
         return df
     df["delivery_date"] = pd.to_datetime(df["delivery_date"])
     return df.pivot(index="delivery_date", columns="hour_local", values="y_pred").sort_index()
+
+
+def _block(model, panels, block):
+    return model.forecast_block(panels, block)
+
+
+def rolling_forecast_blocks(model, panels: dict, days, block_days: int, n_jobs: int) -> pd.DataFrame:
+    """Modele estymowane raz na blok dób; bloki liczone równolegle."""
+    days = list(days)
+    blocks = [days[i:i + block_days] for i in range(0, len(days), block_days)]
+    results = Parallel(n_jobs=n_jobs, verbose=5)(
+        delayed(_block)(model, panels, pd.DatetimeIndex(b)) for b in blocks
+    )
+    preds = [p for r in results for p in r]
+    return pd.DataFrame(preds, index=pd.DatetimeIndex(days, name="delivery_date"), columns=range(24))

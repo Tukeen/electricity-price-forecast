@@ -20,3 +20,6 @@ jeśli okno ma za mało wierszy (< liczba cech + 10), doba jest pomijana i rapor
 przycinanie cech do ±5σ i predykcji do zakresu okna ± 1 w skali asinh (identyczne dla wszystkich modeli) oraz równoległe liczenie prognoz
 wyniki dla H3 z kroku 6a są wstępne do czasu ponownego liczenia
 To wszystko dotyczy danych do 2025, więc sejf 2026 jest nietknięty.
+Poprawkę wprowadziliśmy po obejrzeniu wyników w okresie rozwojowym 2024–2025, ale stosujemy ją identycznie do wszystkich modeli. Zapisz to w decisions.md.
+Prognozy egzogeniczne z ENTSO-E. Z tego, co wiem, wiatr i PV na dobę następną mogą być publikowane po zamknięciu fixingu (ok. 12:00), dokładnie godzin nie sprawdzałem. W pracy traktujemy je jako przybliżenie prognoz dostępnych uczestnikom rynku z własnych źródeł. Wpisz to jako założenie w 3.1 i zweryfikuj godziny publikacji w dokumentacji ENTSO-E, bo rMAE poniżej 0,7 jest lepsze od typowych wyników z literatury.
+definicje sarima i sarimax (dummies dnia tygodnia w obu), estymację raz na 28 dób z codzienną aktualizacją stanu, VAR z dummies bez zmiennych egzogenicznych oraz uzupełnianie braków PV średnią okna
