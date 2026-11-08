@@ -7,3 +7,6 @@ scikit-learn
 streamlit
 python-dotenv
 truststore
+duckdb
+pyarrow
+pyyaml

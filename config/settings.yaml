@@ -1,0 +1,21 @@
+market:
+  name: PL
+  eic: "10YPL-AREA-----S"
+  currency: EUR
+  timezone: Europe/Warsaw
+
+data:
+  start_date: 2020-01-01
+  resolution: hourly          # 15-min (od 2025-10-01) agregowane średnią z 4 kwadransów
+  freeze_date: null           # data snapshotu danych do testu końcowego (styczeń 2027)
+
+evaluation:
+  warmup: {start: 2020-01-01, end: 2021-12-31}
+  regime_analysis: {start: 2022-01-01, end: 2025-12-31}
+  validation: {start: 2025-01-01, end: 2025-12-31}   # strojenie i wybór modeli
+  test: {start: 2026-01-01, end: 2026-12-31}         # zamknięty sejf: tylko raz, po zamrożeniu kodu
+  metrics: [MAE, RMSE, ME, rMAE]
+  significance_test: diebold_mariano
+
+transform:
+  variance_stabilizing: asinh
