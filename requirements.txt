@@ -13,3 +13,4 @@ pyyaml
 statsmodels
 matplotlib
 scikit-learn
+xgboost

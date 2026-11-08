@@ -29,7 +29,7 @@ KEYS = ["sarima", "sarimax", "var1", "var2", "var3"]
 ALL = ["naive_daily", "naive_mixed", "arx", "arx_x", "lear", "lear_x", *KEYS]
 PAIRS = [("sarima", "naive_mixed"), ("sarimax", "naive_mixed"), ("sarimax", "sarima"), ("sarima", "arx"),
          ("sarimax", "arx_x"), ("sarimax", "lear_x"), ("var1", "naive_mixed"), ("var2", "var1"),
-         ("var3", "var2"), ("var2", "arx")]
+         ("var3", "var2"), ("var2", "arx"), ("var1", "arx"), ("var1", "lear")]
 
 
 def build(key: str):
