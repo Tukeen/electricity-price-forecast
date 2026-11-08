@@ -26,3 +26,7 @@ definicje sarima i sarimax (dummies dnia tygodnia w obu), estymację raz na 28 d
 VAR(1) wybrany spośród p = 1–3 na podstawie MAE i testu DM w okresie 2021–2025 (rok 2026 nietknięty),
 ARX, LEAR, VAR i XGBoost uczone codziennie od nowa, SARIMA/SARIMAX raz na 28 dób z codzienną aktualizacją stanu filtra,
 XGBoost z domyślnymi hiperparametrami (strojenie w kroku 8).
+wariant awaryjny SARIMAX (kolejność prób: podstawowy, Powell, prostszy rząd (1,0,1)(1,0,1,24)) i w którym bloku został użyty,
+specyfikację MLP: jeden model na wszystkie godziny, one-hot godzin i dni, dwie warstwy (64, 32), średnia z 3 inicjalizacji, early stopping na losowym podzbiorze wierszy treningowych,
+ograniczenie: SARIMA(X) estymowana co 28 dób, pozostałe modele codziennie,
+że wnioski z 7a dotyczące H1–H3 są wstępne (niestrojone hiperparametry, okres rozwojowy 2021–2025, rok 2026 nietknięty).

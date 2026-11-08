@@ -35,6 +35,24 @@ class SarimaEPF:
             X = np.column_stack([X, fund])
         return X
 
+    def _fit(self, y_tr, X_train, block_start):
+        attempts = [
+            ("podstawowy", self.order, self.seasonal, "lbfgs"),
+            ("powell", self.order, self.seasonal, "powell"),
+            ("prostszy rząd", (1, 0, 1), (1, 0, 1, 24), "lbfgs"),
+        ]
+        for label, order, seasonal, method in attempts:
+            try:
+                res = SARIMAX(y_tr, exog=X_train, order=order, seasonal_order=seasonal, trend="c",
+                              concentrate_scale=True).fit(disp=False, maxiter=self.maxiter, method=method)
+            except Exception as exc:
+                print(f"  {self.name}: blok od {block_start}: wariant '{label}' nie powiódł się ({exc})")
+                continue
+            if label != "podstawowy":
+                print(f"  {self.name}: blok od {block_start}: użyto wariantu '{label}'")
+            return res
+        return None
+
     def forecast_block(self, panels: dict, days: pd.DatetimeIndex) -> list[np.ndarray]:
         price = panels["price"]
         train_days = price.loc[: days[0] - pd.Timedelta(days=1)].index[-self.window_days:]
@@ -44,11 +62,8 @@ class SarimaEPF:
 
         X = self._exog(panels, train_days.append(days), len(train_days))
         n = len(train_days) * 24
-        try:
-            res = SARIMAX(y_tr, exog=X[:n], order=self.order, seasonal_order=self.seasonal,
-                          trend="c", concentrate_scale=True).fit(disp=False, maxiter=self.maxiter)
-        except Exception as exc:
-            print(f"  {self.name}: błąd estymacji bloku od {days[0].date()}: {exc}")
+        res = self._fit(y_tr, X[:n], days[0].date())
+        if res is None:
             return [np.full(24, np.nan) for _ in days]
 
         out = []
@@ -61,6 +76,6 @@ class SarimaEPF:
                 res = res.extend(actual, exog=Xd)
             except Exception as exc:
                 print(f"  {self.name}: błąd {day.date()}: {exc}")
-                out.extend(np.full(24, np.nan) for _ in range(len(days) - i - len(out) + i))
+                out.extend(np.full(24, np.nan) for _ in range(len(days) - len(out)))
                 break
-        return out[: len(days)] + [np.full(24, np.nan)] * max(0, len(days) - len(out))
+        return out

@@ -5,6 +5,7 @@ python -m src.evaluation.run_econometric --models var1 var2 var3
 python -m src.evaluation.run_econometric --models sarima sarimax --refit-every 28 --jobs 10
 """
 import os
+import numpy as np
 
 for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
     os.environ.setdefault(_v, "1")
@@ -46,11 +47,25 @@ def main() -> None:
     ap.add_argument("--jobs", type=int, default=10)
     ap.add_argument("--refit-every", type=int, default=28)
     ap.add_argument("--smoke", action="store_true")
+    ap.add_argument("--repair", action="store_true")
     args = ap.parse_args()
 
     panels = load_panels()
     price = panels["price"]
     days = price.loc[pd.Timestamp(EV["regime_analysis"]["start"]): pd.Timestamp(EV["validation"]["end"])].index
+    if args.repair:  # przelicza tylko bloki, w których zapisane prognozy mają NaN
+        for key in args.models:
+            model = build(key)
+            old = load_forecasts(DB_PATH, model.name).reindex(days)
+            starts = [i for i in range(0, len(days), args.refit_every)
+                      if old.iloc[i:i + args.refit_every].isna().any(axis=1).any()]
+            print(f"== {model.name}: bloki do naprawy: {[str(days[i].date()) for i in starts]} ==")
+            for i in starts:
+                block = days[i:i + args.refit_every]
+                old.iloc[i:i + len(block)] = np.vstack(model.forecast_block(panels, block))
+            if starts:
+                save_forecasts(DB_PATH, model.name, old, price)
+        args.models = []
 
     for key in args.models:
         model = build(key)
