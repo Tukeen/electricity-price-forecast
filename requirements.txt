@@ -10,3 +10,5 @@ truststore
 duckdb
 pyarrow
 pyyaml
+statsmodels
+matplotlib
