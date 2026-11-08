@@ -17,3 +17,6 @@ powrót do EUR przez odwrotną transformację (to w przybliżeniu mediana, nie �
 LEAR używa prognoz egzogenicznych tylko z doby D (24 godziny), co jest uproszczeniem względem wersji z literatury;
 wiersze z brakującym PV (przed 2020-04-10) są pomijane przy estymacji, więc wczesny 2021 ma mniej obserwacji;
 jeśli okno ma za mało wierszy (< liczba cech + 10), doba jest pomijana i raport liczy tylko doby wspólne dla wszystkich modeli.
+przycinanie cech do ±5σ i predykcji do zakresu okna ± 1 w skali asinh (identyczne dla wszystkich modeli) oraz równoległe liczenie prognoz
+wyniki dla H3 z kroku 6a są wstępne do czasu ponownego liczenia
+To wszystko dotyczy danych do 2025, więc sejf 2026 jest nietknięty.

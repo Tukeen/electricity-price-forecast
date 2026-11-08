@@ -13,6 +13,8 @@ from sklearn.linear_model import LassoLarsIC
 warnings.filterwarnings("ignore")
 LAGS = (1, 2, 3, 7)
 EXOG = ("load", "wind", "pv")
+Z_CLIP = 5.0     # max |z| dla cech w dobie testowej
+Y_MARGIN = 1.0   # margines poza zakresem celu z okna (skala asinh)
 
 
 def _asinh_params(prices: np.ndarray) -> tuple[float, float]:
@@ -57,7 +59,8 @@ def arx_matrix(p: pd.DataFrame, exog: dict, h: int) -> pd.DataFrame:
 
 def _standardize(Xtr: pd.DataFrame, xnew: pd.DataFrame):
     mu, sd = Xtr.mean(), Xtr.std(ddof=0).replace(0, 1.0)
-    return ((Xtr - mu) / sd).to_numpy(), ((xnew - mu) / sd).to_numpy()
+    z = ((xnew - mu) / sd).clip(-Z_CLIP, Z_CLIP)
+    return ((Xtr - mu) / sd).to_numpy(), z.to_numpy()
 
 
 def _ols(Xtr: pd.DataFrame, ytr: pd.Series, xnew: pd.DataFrame) -> float:
@@ -84,6 +87,8 @@ class LinearEPF:
         exog = {k: info[k] for k in EXOG} if self.use_exog else {}
 
         yhat = self._lear(p, exog, win, day) if self.kind == "lear" else self._arx(p, exog, win, day)
+        lo, hi = float(p.loc[win].min().min()), float(p.loc[win].max().max())
+        yhat = np.clip(yhat, lo - Y_MARGIN, hi + Y_MARGIN)
         return a + b * np.sinh(yhat)  # powrót do EUR/MWh
 
     def _lear(self, p, exog, win, day) -> np.ndarray:

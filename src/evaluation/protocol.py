@@ -4,22 +4,36 @@ from __future__ import annotations
 import duckdb
 import numpy as np
 import pandas as pd
+import os
+from joblib import Parallel, delayed
 
 from src.features.panels import info_set
 
 
-def rolling_forecast(model, panels: dict, days, window_days: int, refit_every: int = 1) -> pd.DataFrame:
-    """Zwraca panel prognoz (doby x 24 godziny). Model może mieć metodę fit(info, train_days)."""
-    preds = []
-    for i, day in enumerate(days):
-        info = info_set(panels, day)
-        if hasattr(model, "fit") and i % refit_every == 0:
-            model.fit(info, info["price"].index[-window_days:])
-        preds.append(np.asarray(model.predict(info, day), dtype=float))
-        
-        if (i + 1) % 250 == 0:
-            print(f"  {getattr(model, 'name', 'model')}: {i + 1}/{len(days)} dób")
-            
+def _predict_chunk(model, panels, chunk):
+    return [np.asarray(model.predict(info_set(panels, day), day), dtype=float) for day in chunk]
+
+
+def rolling_forecast(model, panels: dict, days, window_days: int, refit_every: int = 1,
+                     n_jobs: int = 1) -> pd.DataFrame:
+    """Prognozy kroczące (doby x 24 h). Modele bez fit() liczone równolegle po dobach."""
+    days = list(days)
+    if hasattr(model, "fit") or n_jobs == 1:
+        preds = []
+        for i, day in enumerate(days):
+            info = info_set(panels, day)
+            if hasattr(model, "fit") and i % refit_every == 0:
+                model.fit(info, info["price"].index[-window_days:])
+            preds.append(np.asarray(model.predict(info, day), dtype=float))
+            if (i + 1) % 250 == 0:
+                print(f"  {getattr(model, 'name', 'model')}: {i + 1}/{len(days)} dób")
+    else:
+        n = n_jobs if n_jobs > 0 else (os.cpu_count() or 1)
+        chunks = [c for c in np.array_split(np.arange(len(days)), n * 4) if len(c)]
+        results = Parallel(n_jobs=n_jobs)(
+            delayed(_predict_chunk)(model, panels, [days[i] for i in c]) for c in chunks
+        )
+        preds = [p for r in results for p in r]
     return pd.DataFrame(preds, index=pd.DatetimeIndex(days, name="delivery_date"), columns=range(24))
 
 

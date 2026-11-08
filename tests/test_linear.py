@@ -24,3 +24,10 @@ def test_lear_returns_nan_when_too_few_rows():
     day = price.index[100]
     pred = LinearEPF("lear", False, 30).predict(info_set({"price": price}, day), day)
     assert pred.shape == (24,) and np.isnan(pred).all()
+
+
+def test_standardize_clips_outlier_rows():
+    from src.models.linear import Z_CLIP, _standardize
+    Xtr = pd.DataFrame({"a": [0.0, 0.0, 0.0, 0.001]})
+    _, z = _standardize(Xtr, pd.DataFrame({"a": [50.0]}))
+    assert z[0, 0] == Z_CLIP

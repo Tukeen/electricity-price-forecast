@@ -1,10 +1,11 @@
 """Modele liniowe (ARX, LEAR) z i bez zmiennych egzogenicznych, ocena 2021-2025.
 
-Uruchomienie:  python -m src.evaluation.run_linear [--models arx arx_x lear lear_x]
+Uruchomienie:  python -m src.evaluation.run_linear [--models arx arx_x lear lear_x] [--jobs 10]
 """
 from __future__ import annotations
 
 import argparse
+import time
 
 import pandas as pd
 
@@ -25,6 +26,7 @@ PAIRS = [("arx", "naive_mixed"), ("arx_x", "naive_mixed"), ("lear", "naive_mixed
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--models", nargs="+", default=list(SPECS), choices=list(SPECS))
+    ap.add_argument("--jobs", type=int, default=10)
     args = ap.parse_args()
 
     panels = load_panels()
@@ -35,7 +37,10 @@ def main() -> None:
         kind, use_exog = SPECS[key]
         model = LinearEPF(kind, use_exog, EV["window_days"])
         print(f"== {model.name} ==")
-        save_forecasts(DB_PATH, model.name, rolling_forecast(model, panels, days, EV["window_days"]), price)
+        t0 = time.time()
+        pred = rolling_forecast(model, panels, days, EV["window_days"], n_jobs=args.jobs)
+        save_forecasts(DB_PATH, model.name, pred, price)
+        print(f"   {time.time() - t0:.0f} s")
 
     errs = {}
     for name in ["naive_daily", "naive_mixed", *SPECS]:
