@@ -19,3 +19,7 @@ evaluation:
 
 transform:
   variance_stabilizing: asinh
+
+ingest:
+  from_year: 2020     # od tego roku pobieramy nowe dane (starsze pliki cen, 2015-2019, zostają w bazie)
+  forward_days: 2     # pobieramy też dobę następną (jutrzejsze ceny i prognozy), o ile już opublikowane
