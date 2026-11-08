@@ -9,7 +9,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 XML_PATH = PROJECT_ROOT / "data" / "raw" / "entsoe_prices" / "prices_2015.xml"
 CSV_PATH = PROJECT_ROOT / "data" / "processed" / "poland_day_ahead_prices.csv"
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(PROJECT_ROOT / "src" / "data"))
 from download_entsoe_prices import parse_price_document
 
 

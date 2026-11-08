@@ -27,4 +27,4 @@ metod bazowych, ekonometrycznych i uczenia maszynowego.
 Nie dodawaj do repozytorium kluczy API, plikow `.env`, danych surowych
 ani lokalnych artefaktow modeli.
 
-python -m src.data.download_entsoe_prices
+python -m src.data.download_entsoe_pricesS
