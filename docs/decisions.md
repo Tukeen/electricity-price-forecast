@@ -48,3 +48,8 @@ tabelę z sekcji 2 jako obserwację z okresu rozwojowego, razem z uwagą, że wn
 LEAR vs ARX: różne okna (728 vs 364), więc porównanie łączy estymator i okno,
 awaria WinError 6 i ponowienie przebiegu XGBoost/MLP,
 że różnice między blokami SARIMA(X) w strojeniu i w pełnym przebiegu (np. 15,63 vs 15,65 dla 2025) wynikają z innego początku bloków 28-dobowych.
+H1 (ML lepsze od klasycznych): potwierdzona zależnie od porównania.
+Względem SARIMA(X): tak, w każdym reżimie i w obu specyfikacjach. xgb_x wygrywa z sarimax (DM −5,28, MAE −9,3%) i mlp_x także (DM −3,80). Bez zmiennych egzogenicznych xgb i mlp biją SARIMA (DM −6,89 i −8,67). W głównej specyfikacji przewaga jest o ok. 3,6 punktu proc. większa niż w wersji z oknem 364, bo okno 728 pogorszyło SARIMAX.
+Względem najlepszego modelu ekonometrycznego (LEAR): częściowo. Z egzogenicznymi tylko xgb_x bije lear_x (−5,0%, p=0,0006), a mlp_x nie (−2,0%, p=0,16). Bez egzogenicznych wygrywa LEAR: xgb jest od niego o 5,8% gorszy (DM +4,93), a mlp o 2,9% (DM +3,30).
+Przewaga xgb_x nad lear_x jest skupiona w latach 2023–2024. MAE różni się w kolejnych latach o +1,2% (2021), +0,3% (2022), −16,1% (2023), −11,3% (2024), +0,1% (2025). Przy oknie 364 wynosi to +2,4%, −4,4%, −14,3%, −4,2% i −0,5%. Rok 2023 jest więc silny w obu wersjach, 2024 zależy od okna, a w 2021 i 2025 przewagi nie ma. Dlaczego akurat 2023, nie umiem wskazać. W tym roku pojawiły się pierwsze ceny ujemne, ale to tylko podejrzenie.
+metodę przedziałów (empiryczne kwantyle błędów z 90 dób, poziomy 80% i 90%, minimum 60 dób historii, więc pierwsze przedziały od początku marca 2021) i ograniczenie, że natywne przedziały parametryczne ARX i SARIMAX są omówione opisowo, a nie testowane
