@@ -35,3 +35,8 @@ reguła raportowania: ML porównujemy z najlepszym modelem klasy ekonometrycznej
 Prophet z codzienną reestymacją i bez sezonowości rocznej (okno 364 dni),
 wnioski z H1–H3 są wstępne (niestrojone modele, okres rozwojowy 2021–2025, rok 2026 nietknięty).
 hipoteza o roli prognozy zapotrzebowania, oznaczona jako niezweryfikowana.
+W SARIMA po dodaniu cechy świątecznej MAE w reżimie stabilnym wzrosło o 0,52 EUR/MWh, z czego ok. 86% pochodzi z jednego 28-dobowego bloku estymacji (26.03–22.04.2021). Różnica nie jest skupiona w dobach świątecznych, tylko rozłożona na większość dób bloku, co wskazuje na zestaw parametrów estymowany raz na 28 dób. Wynik raportujemy bez zmian, a wniosek o niższej jakości SARIMA względem benchmarku w reżimie stabilnym jest odporny na tę różnicę (rMAE 1,12 przed i 1,21 po)
+Walidacja to wyłącznie 2025. Rok 2026 nie jest używany.
+Każdy wariant (z i bez egzogenicznych) stroimy osobno, żeby efekt egzogenicznych (H3) nie był zawyżony. Klasę ekonometryczną stroimy tak samo jak ML (długość okna dla ARX/LEAR, rząd dla SARIMA), żeby nie faworyzować ML.
+Wybór: najprostsza konfiguracja (pierwsza w siatce) w granicach 1% MAE od najlepszej, żeby nie dopasowywać się do szumu jednego roku.
+Wynik trzeba czytać ostrożnie: 2025 jest jednym rokiem, więc zysk poniżej ok. 1% to szum.
