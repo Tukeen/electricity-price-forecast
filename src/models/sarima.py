@@ -11,6 +11,7 @@ import warnings
 import numpy as np
 import pandas as pd
 from statsmodels.tsa.statespace.sarimax import SARIMAX
+from src.features.calendar import is_holiday
 
 from src.models.linear import EXOG, Y_MARGIN, Z_CLIP, _asinh_params
 
@@ -25,7 +26,8 @@ class SarimaEPF:
 
     def _exog(self, panels: dict, days: pd.DatetimeIndex, n_train: int) -> np.ndarray:
         dow = days.day_of_week.to_numpy()
-        X = np.column_stack([np.repeat((dow == d).astype(float), 24) for d in range(1, 7)])
+        X = np.column_stack([np.repeat((dow == d).astype(float), 24) for d in range(1, 7)]
+                            + [np.repeat(is_holiday(days), 24)])
         if self.use_exog:
             fund = np.column_stack([panels[k].reindex(days).to_numpy().ravel() for k in EXOG])
             tr = fund[: n_train * 24]

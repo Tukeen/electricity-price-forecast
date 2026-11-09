@@ -10,6 +10,7 @@ import warnings
 import numpy as np
 import pandas as pd
 from xgboost import XGBRegressor
+from src.features.calendar import is_holiday
 
 from src.models.linear import EXOG, LAGS, _asinh_params
 
@@ -29,6 +30,7 @@ def build_long(p: pd.DataFrame, exog: dict, use_exog: bool) -> tuple[pd.DataFram
     days = p.index
     n = len(days)
     cols = {"hour": np.tile(np.arange(24), n), "dow": np.repeat(days.day_of_week.to_numpy(), 24)}
+    cols["hol"] = np.repeat(is_holiday(days), 24)
     for k in LAGS:
         cols[f"p_l{k}"] = _flat(p.shift(k))
     for name, agg in (("min", p.min(axis=1)), ("max", p.max(axis=1)), ("mean", p.mean(axis=1))):

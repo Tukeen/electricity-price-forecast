@@ -20,6 +20,7 @@ def common_days(errs: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
 
 def groups(days: pd.DatetimeIndex, regimes: dict) -> dict[str, pd.Series]:
     out = {"całość": pd.Series(True, index=days)}
+    out["2021-2024"] = pd.Series(days.year <= 2024, index=days)
     for name, r in regimes.items():
         out[name] = pd.Series((days >= pd.Timestamp(r["start"])) & (days <= pd.Timestamp(r["end"])), index=days)
     for y in sorted(set(days.year)):

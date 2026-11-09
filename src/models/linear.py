@@ -9,6 +9,7 @@ import warnings
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LassoLarsIC
+from src.features.calendar import is_holiday
 
 warnings.filterwarnings("ignore")
 LAGS = (1, 2, 3, 7)
@@ -25,7 +26,9 @@ def _asinh_params(prices: np.ndarray) -> tuple[float, float]:
 
 def _dummies(index: pd.DatetimeIndex, days: tuple[int, ...]) -> pd.DataFrame:
     dow = index.day_of_week
-    return pd.DataFrame({f"dow{d}": (dow == d).astype(float) for d in days}, index=index)
+    out = pd.DataFrame({f"dow{d}": (dow == d).astype(float) for d in days}, index=index)
+    out["hol"] = is_holiday(index)
+    return out
 
 
 def lear_matrix(p: pd.DataFrame, exog: dict, use_exog: bool) -> pd.DataFrame:

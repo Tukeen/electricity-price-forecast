@@ -34,3 +34,4 @@ SARIMAX: blok 2022-10-07 z ponownej estymacji,
 reguła raportowania: ML porównujemy z najlepszym modelem klasy ekonometrycznej (LEAR/SARIMAX), a nie tylko z SARIMA,
 Prophet z codzienną reestymacją i bez sezonowości rocznej (okno 364 dni),
 wnioski z H1–H3 są wstępne (niestrojone modele, okres rozwojowy 2021–2025, rok 2026 nietknięty).
+hipoteza o roli prognozy zapotrzebowania, oznaczona jako niezweryfikowana.

@@ -9,10 +9,16 @@ import numpy as np
 import pandas as pd
 
 from src.models.linear import EXOG, Y_MARGIN, Z_CLIP, _asinh_params
+from src.features.calendar import is_holiday
 
 warnings.filterwarnings("ignore")
-for _name in ("cmdstanpy", "prophet"):
-    logging.getLogger(_name).setLevel(logging.ERROR)
+def _silence_cmdstan() -> None:
+    """cmdstanpy po imporcie ustawia poziom INFO, więc wyciszamy po imporcie Prophet (w każdym procesie)."""
+    for name in ("cmdstanpy", "prophet"):
+        lg = logging.getLogger(name)
+        lg.handlers = [logging.NullHandler()]
+        lg.propagate = False
+        lg.setLevel(logging.CRITICAL)
 
 
 class ProphetEPF:
@@ -34,6 +40,7 @@ class ProphetEPF:
 
     def predict(self, info: dict, day: pd.Timestamp) -> np.ndarray:
         from prophet import Prophet  # import w procesie roboczym
+        _silence_cmdstan()
 
         price = info["price"]
         win = price.index[-self.window_days:]
@@ -47,6 +54,9 @@ class ProphetEPF:
 
         m = Prophet(yearly_seasonality=False, weekly_seasonality=True, daily_seasonality=True,
                     changepoint_prior_scale=self.cps, uncertainty_samples=0)
+        m.add_regressor("hol", standardize=False)
+        train["hol"] = np.repeat(is_holiday(win), 24)
+        future["hol"] = np.repeat(is_holiday([day]), 24)
         if self.use_exog:
             tr, te = self._regressors(info, win, day)
             for k in EXOG:
