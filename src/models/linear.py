@@ -95,7 +95,7 @@ class LinearEPF:
         return a + b * np.sinh(yhat)  # powrót do EUR/MWh
 
     def _lear(self, p, exog, win, day) -> np.ndarray:
-        X = lear_matrix(p, exog, self.use_exog)
+        X = self._matrix(p, exog, win)
         Y = p.loc[win]
         Xtr = X.loc[win]
         ok = Xtr.notna().all(axis=1) & Y.notna().all(axis=1)
@@ -120,3 +120,6 @@ class LinearEPF:
                 continue
             out[h] = _ols(Xtr[ok], y[ok], xday)
         return out
+
+    def _matrix(self, p, exog, win):
+        return lear_matrix(p, exog, self.use_exog)

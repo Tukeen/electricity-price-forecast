@@ -37,28 +37,29 @@ def rolling_forecast(model, panels: dict, days, window_days: int, refit_every: i
     return pd.DataFrame(preds, index=pd.DatetimeIndex(days, name="delivery_date"), columns=range(24))
 
 
-def save_forecasts(db_path, name: str, pred: pd.DataFrame, price: pd.DataFrame) -> None:
+def save_forecasts(db_path, name: str, pred: pd.DataFrame, price: pd.DataFrame,
+                    table: str = "forecasts") -> None:
     key = ["delivery_date", "hour_local"]
     y_pred = pred.reset_index().melt(id_vars="delivery_date", var_name="hour_local", value_name="y_pred")
     y_true = (price.loc[pred.index].reset_index()
-              .melt(id_vars="delivery_date", var_name="hour_local", value_name="y_true"))
+                .melt(id_vars="delivery_date", var_name="hour_local", value_name="y_true"))
     long = y_pred.merge(y_true, on=key)
     long.insert(0, "model", name)
 
     con = duckdb.connect(str(db_path))
-    con.execute("""CREATE TABLE IF NOT EXISTS forecasts
-                   (model VARCHAR, delivery_date DATE, hour_local INTEGER, y_pred DOUBLE, y_true DOUBLE)""")
-    con.execute("DELETE FROM forecasts WHERE model = ?", [name])
+    con.execute(f"""CREATE TABLE IF NOT EXISTS {table}
+                    (model VARCHAR, delivery_date DATE, hour_local INTEGER, y_pred DOUBLE, y_true DOUBLE)""")
+    con.execute(f"DELETE FROM {table} WHERE model = ?", [name])
     con.register("long_df", long)
-    con.execute("""INSERT INTO forecasts
-                   SELECT model, CAST(delivery_date AS DATE), CAST(hour_local AS INTEGER), y_pred, y_true
-                   FROM long_df""")
+    con.execute(f"""INSERT INTO {table}
+                    SELECT model, CAST(delivery_date AS DATE), CAST(hour_local AS INTEGER), y_pred, y_true
+                    FROM long_df""")
     con.close()
 
 
-def load_forecasts(db_path, name: str) -> pd.DataFrame:
+def load_forecasts(db_path, name: str, table: str = "forecasts") -> pd.DataFrame:
     con = duckdb.connect(str(db_path), read_only=True)
-    df = con.execute("SELECT delivery_date, hour_local, y_pred FROM forecasts WHERE model = ?", [name]).df()
+    df = con.execute(f"SELECT delivery_date, hour_local, y_pred FROM {table} WHERE model = ?", [name]).df()
     con.close()
     if df.empty:
         return df

@@ -17,6 +17,8 @@ from src.evaluation.report import common_days, dm_table, groups
 from src.features.panels import DB_PATH, load_panels
 from src.utils.config import PROJECT_ROOT, load_config
 
+import argparse
+
 CFG = load_config()
 EV = CFG["evaluation"]
 REGIMES = CFG["regimes"]
@@ -29,9 +31,13 @@ OUT = PROJECT_ROOT / "reports" / "tables"
 
 
 def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--table", default="forecasts")
+    args = ap.parse_args()
+    suffix = "" if args.table == "forecasts" else f"_{args.table}"
     price = load_panels()["price"]
     days = price.loc[pd.Timestamp(EV["regime_analysis"]["start"]): pd.Timestamp(EV["validation"]["end"])].index
-    errs = {m: errors(load_forecasts(DB_PATH, m).reindex(days), price) for m in MODELS}
+    errs = {m: errors(load_forecasts(DB_PATH, m, args.table).reindex(days), price) for m in MODELS}
     errs = common_days(errs)
     days = next(iter(errs.values())).index
     grp = groups(days, REGIMES)
@@ -43,7 +49,7 @@ def main() -> None:
     dm["p_holm"] = dm["p"]
     for _, idx in dm[dm["typ"] != "okres"].groupby(["A", "B", "typ"]).groups.items():
         dm.loc[idx, "p_holm"] = holm(dm.loc[idx, "p"]).to_numpy()
-    dm.to_csv(OUT / "hypotheses_dm.csv", index=False, encoding="utf-8-sig")
+    dm.to_csv(OUT / f"hypotheses_dm{suffix}.csv", index=False, encoding="utf-8-sig")
     order = [f"{a} vs {b}" for a, b in PAIRS]
     for typ in ("rok", "reżim"):
         t = dm[dm["typ"] == typ].copy()
@@ -64,7 +70,7 @@ def main() -> None:
             ma, mb = mae(errs[a].loc[mask]), mae(errs[b].loc[mask])
             pair_rows.append({"podzbiór": label, "para": f"{a} vs {b}", "dni": int(mask.sum()),
                               "A/B - 1 [%]": 100 * (ma / mb - 1), "DM": stat, "p": p})
-    pd.DataFrame(pair_rows).to_csv(OUT / "hypotheses_negative_days.csv", index=False, encoding="utf-8-sig")
+    pd.DataFrame(pair_rows).to_csv(OUT / f"hypotheses_negative_days{suffix}.csv", index=False, encoding="utf-8-sig")
     print("\n=== MAE w reżimie OZE: doby z ujemną ceną i pozostałe ===")
     print(pd.DataFrame(mae_rows).set_index("podzbiór").round(2).to_string())
     pairs_tab = pd.DataFrame(pair_rows)
@@ -86,7 +92,7 @@ def main() -> None:
                              "Delta [p.p.]": 100 * point, "CI dolna": 100 * lo, "CI górna": 100 * hi,
                              "P(Delta<0)": prob})
     boot = pd.DataFrame(rows)
-    boot.to_csv(OUT / "hypotheses_h3_bootstrap.csv", index=False, encoding="utf-8-sig")
+    boot.to_csv(OUT / f"hypotheses_h3_bootstrap{suffix}.csv", index=False, encoding="utf-8-sig")
     print("\n=== H3: Delta = zysk ML - zysk ECON po dodaniu zmiennych egzogenicznych (Delta<0: ML zyskuje więcej) ===")
     print(boot.round(2).to_string(index=False))
 
