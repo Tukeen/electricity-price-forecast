@@ -48,6 +48,7 @@ def main() -> None:
     ap.add_argument("--models", nargs="*", default=[], choices=list(SPECS))
     ap.add_argument("--jobs", type=int, default=10)
     ap.add_argument("--smoke", type=int, default=0)
+    ap.add_argument("--no-report", action="store_true")
     args = ap.parse_args()
 
     panels = load_panels()
@@ -69,6 +70,9 @@ def main() -> None:
         pred = rolling_forecast(model, panels, days, EV["window_days"], n_jobs=args.jobs)
         save_forecasts(DB_PATH, model.name, pred, price)
         print(f"   {time.time() - t0:.0f} s")
+
+        if args.no_report:
+            return
 
     if args.smoke:
         return

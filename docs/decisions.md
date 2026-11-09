@@ -40,3 +40,11 @@ Walidacja to wyłącznie 2025. Rok 2026 nie jest używany.
 Każdy wariant (z i bez egzogenicznych) stroimy osobno, żeby efekt egzogenicznych (H3) nie był zawyżony. Klasę ekonometryczną stroimy tak samo jak ML (długość okna dla ARX/LEAR, rząd dla SARIMA), żeby nie faworyzować ML.
 Wybór: najprostsza konfiguracja (pierwsza w siatce) w granicach 1% MAE od najlepszej, żeby nie dopasowywać się do szumu jednego roku.
 Wynik trzeba czytać ostrożnie: 2025 jest jednym rokiem, więc zysk poniżej ok. 1% to szum.
+deklarujemy już teraz dwie specyfikacje:
+główna: konfiguracje z config/model_params.yaml (okno 728 tam, gdzie wybrane),
+wrażliwości: wszystkie modele z oknem 364 (prognozy z tabeli forecasts_v2, już policzone).
+dwie specyfikacje (główna i wrażliwości, okno 364) i że obie policzymy na teście 2026,
+tabelę z sekcji 2 jako obserwację z okresu rozwojowego, razem z uwagą, że wniosek jest wstępny, bo ML jeszcze nie przeliczono,
+LEAR vs ARX: różne okna (728 vs 364), więc porównanie łączy estymator i okno,
+awaria WinError 6 i ponowienie przebiegu XGBoost/MLP,
+że różnice między blokami SARIMA(X) w strojeniu i w pełnym przebiegu (np. 15,63 vs 15,65 dla 2025) wynikają z innego początku bloków 28-dobowych.
