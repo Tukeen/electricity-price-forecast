@@ -1,0 +1,15 @@
+walidacja: '2025'
+reguła: domyślna konfiguracja, chyba że najlepsza poprawia MAE o więcej niż 1%
+selected:
+  arx: w364
+  lear: w728
+  arx_x: w728
+  lear_x: w728
+  xgb: w728_d5_n600
+  xgb_x: w728_d7_n600
+  prophet: cps0.05
+  prophet_x: cps0.05
+  mlp: w728_h64-32_a0.001
+  mlp_x: w728_h64-32_a0.001
+  sarima: o201_s101_w728
+  sarimax: o201_s101_w728

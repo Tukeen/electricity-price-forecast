@@ -21,6 +21,7 @@ from src.models.mlp import MLPEPF
 from src.models.xgb import XGBoostEPF
 from src.models.prophet_epf import ProphetEPF
 from src.utils.config import PROJECT_ROOT, load_config
+from src.evaluation.registry import build_model
 
 CFG = load_config()
 EV = CFG["evaluation"]
@@ -39,9 +40,7 @@ EXOG_PAIRS = [("arx", "arx_x"), ("lear", "lear_x"), ("sarima", "sarimax"), ("xgb
 
 
 def build(key: str):
-    kind, use_exog = SPECS[key]
-    cls = {"xgb": XGBoostEPF, "mlp": MLPEPF, "prophet": ProphetEPF}[kind]
-    return cls(use_exog, EV["window_days"])
+    return build_model(key)
 
 
 def main() -> None:

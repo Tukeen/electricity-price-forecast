@@ -34,7 +34,7 @@ CFG = load_config()
 EV = CFG["evaluation"]
 OUT = PROJECT_ROOT / "reports" / "tables" / "tuning_results.csv"
 FAMILIES = ["linear", "xgb", "prophet", "mlp", "sarima"]
-TOLERANCE = 1.01
+MIN_GAIN = 0.01
 
 
 def specs(family: str):
@@ -52,9 +52,10 @@ def specs(family: str):
                             lambda x=use_x, w=win, d=depth, n=n, lr=lr: XGBoostEPF(
                                 x, w, dict(max_depth=d, n_estimators=n, learning_rate=lr)), "daily"))
         elif family == "prophet":
-            for cps in (0.05, 0.01, 0.2):
-                out.append((f"prophet{sfx}", f"cps{cps:g}",
-                            lambda x=use_x, c=cps: ProphetEPF(x, 364, c), "daily"))
+            for cps, win in ((0.05, 364), (0.01, 364), (0.2, 364), (0.05, 728)):
+                label = f"cps{cps:g}" + ("" if win == 364 else f"_w{win}")
+                out.append((f"prophet{sfx}", label,
+                            lambda x=use_x, c=cps, w=win: ProphetEPF(x, w, c), "daily"))
         elif family == "mlp":
             for win, hidden, alpha in ((364, (64, 32), 1e-3), (364, (32, 16), 1e-3), (364, (64, 32), 1e-1),
                                        (364, (128, 64), 1e-2), (728, (64, 32), 1e-3)):
@@ -62,9 +63,10 @@ def specs(family: str):
                             lambda x=use_x, w=win, h=hidden, a=alpha: MLPEPF(
                                 x, w, params=dict(hidden_layer_sizes=h, alpha=a)), "daily"))
         elif family == "sarima":
-            for order in ((2, 0, 1), (1, 0, 1), (3, 0, 1)):
-                out.append((f"sarima{'x' if use_x else ''}", "o" + "".join(map(str, order)) + "_s101",
-                            lambda x=use_x, o=order: SarimaEPF(x, 364, o, (1, 0, 1, 24)), "blocks"))
+            for order, win in (((2, 0, 1), 364), ((1, 0, 1), 364), ((3, 0, 1), 364), ((2, 0, 1), 728)):
+                label = "o" + "".join(map(str, order)) + "_s101" + ("" if win == 364 else f"_w{win}")
+                out.append((f"sarima{'x' if use_x else ''}", label,
+                            lambda x=use_x, o=order, w=win: SarimaEPF(x, w, o, (1, 0, 1, 24)), "blocks"))
     return out
 
 
@@ -81,9 +83,12 @@ def evaluate(builder, mode: str, panels: dict, days, jobs: int) -> dict:
 
 
 def choose(g: pd.DataFrame) -> pd.Series:
-    """Najprostsza (pierwsza w siatce) konfiguracja w granicach TOLERANCE od najlepszego MAE."""
+    """Konfiguracja domyślna (pierwsza w siatce), chyba że najlepsza poprawia MAE o więcej niż MIN_GAIN."""
     g = g.reset_index(drop=True)
-    return g[g["mae"] <= TOLERANCE * g["mae"].min()].iloc[0]
+    best = g.loc[g["mae"].idxmin()]
+    if pd.isna(g.loc[0, "mae"]) or best["mae"] < (1 - MIN_GAIN) * g.loc[0, "mae"]:
+        return best
+    return g.loc[0]
 
 
 def summarize(done: pd.DataFrame) -> pd.DataFrame:

@@ -23,6 +23,7 @@ from src.features.panels import DB_PATH, load_panels
 from src.models.sarima import SarimaEPF
 from src.models.var import VarEPF
 from src.utils.config import PROJECT_ROOT, load_config
+from src.evaluation.registry import build_model
 
 CFG = load_config()
 EV = CFG["evaluation"]
@@ -34,11 +35,9 @@ PAIRS = [("sarima", "naive_mixed"), ("sarimax", "naive_mixed"), ("sarimax", "sar
 
 
 def build(key: str):
-    if key == "sarima":
-        return SarimaEPF(False, EV["window_days"])
-    if key == "sarimax":
-        return SarimaEPF(True, EV["window_days"])
-    return VarEPF(int(key[3:]), EV["window_days"])
+      if key in ("sarima", "sarimax"):
+          return build_model(key)
+      return VarEPF(int(key[3:]), EV["window_days"])
 
 
 def main() -> None:

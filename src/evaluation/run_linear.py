@@ -15,6 +15,7 @@ from src.evaluation.report import common_days, dm_table, summarize
 from src.features.panels import DB_PATH, load_panels
 from src.models.linear import LinearEPF
 from src.utils.config import PROJECT_ROOT, load_config
+from src.evaluation.registry import build_model
 
 CFG = load_config()
 EV = CFG["evaluation"]
@@ -34,8 +35,7 @@ def main() -> None:
     days = price.loc[pd.Timestamp(EV["regime_analysis"]["start"]): pd.Timestamp(EV["validation"]["end"])].index
 
     for key in args.models:
-        kind, use_exog = SPECS[key]
-        model = LinearEPF(kind, use_exog, EV["window_days"])
+        model = build_model(key)
         print(f"== {model.name} ==")
         t0 = time.time()
         pred = rolling_forecast(model, panels, days, EV["window_days"], n_jobs=args.jobs)
