@@ -28,10 +28,11 @@ def groups(days: pd.DatetimeIndex, regimes: dict) -> dict[str, pd.Series]:
     return out
 
 
-def summarize(errs: dict[str, pd.DataFrame], ref: str, regimes: dict) -> pd.DataFrame:
+def summarize(errs, ref, regimes, group_fn=None) -> pd.DataFrame:
     days = errs[ref].index
     rows = []
-    for g, mask in groups(days, regimes).items():
+    grp = group_fn(days) if group_fn else groups(days, regimes)
+    for g, mask in grp.items():
         m = mask.to_numpy()
         if not m.any():
             continue
@@ -43,11 +44,12 @@ def summarize(errs: dict[str, pd.DataFrame], ref: str, regimes: dict) -> pd.Data
     return pd.DataFrame(rows)
 
 
-def dm_table(errs: dict[str, pd.DataFrame], pairs: list[tuple[str, str]], regimes: dict) -> pd.DataFrame:
+def dm_table(errs, pairs, regimes, group_fn=None) -> pd.DataFrame:
     """stat < 0: pierwszy model z pary ma mniejszą stratę (jest lepszy)."""
     days = next(iter(errs.values())).index
     rows = []
-    for g, mask in groups(days, regimes).items():
+    grp = group_fn(days) if group_fn else groups(days, regimes)
+    for g, mask in grp.items():
         m = mask.to_numpy()
         if m.sum() < 30:
             continue
@@ -56,3 +58,12 @@ def dm_table(errs: dict[str, pd.DataFrame], pairs: list[tuple[str, str]], regime
                 stat, p = diebold_mariano(errs[a].loc[m], errs[b].loc[m])
                 rows.append({"grupa": g, "A": a, "B": b, "dni": int(m.sum()), "DM": stat, "p": p})
     return pd.DataFrame(rows)
+
+def holdout_groups(days: pd.DatetimeIndex) -> dict[str, pd.Series]:
+    """Grupy dla roku testowego: całość, kwartały, miesiące (klucze '01'..'12')."""
+    out = {"całość": pd.Series(True, index=days)}
+    for q in range(1, 5):
+        out[f"Q{q}"] = pd.Series(days.quarter == q, index=days)
+    for m in range(1, 13):
+        out[f"{m:02d}"] = pd.Series(days.month == m, index=days)
+    return out

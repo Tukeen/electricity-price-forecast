@@ -54,3 +54,28 @@ Względem najlepszego modelu ekonometrycznego (LEAR): częściowo. Z egzogeniczn
 Przewaga xgb_x nad lear_x jest skupiona w latach 2023–2024. MAE różni się w kolejnych latach o +1,2% (2021), +0,3% (2022), −16,1% (2023), −11,3% (2024), +0,1% (2025). Przy oknie 364 wynosi to +2,4%, −4,4%, −14,3%, −4,2% i −0,5%. Rok 2023 jest więc silny w obu wersjach, 2024 zależy od okna, a w 2021 i 2025 przewagi nie ma. Dlaczego akurat 2023, nie umiem wskazać. W tym roku pojawiły się pierwsze ceny ujemne, ale to tylko podejrzenie.
 metodę przedziałów (empiryczne kwantyle błędów z 90 dób, poziomy 80% i 90%, minimum 60 dób historii, więc pierwsze przedziały od początku marca 2021) i ograniczenie, że natywne przedziały parametryczne ARX i SARIMAX są omówione opisowo, a nie testowane
 szystko dotyczy okresu rozwojowego, a rok 2026 jest nietknięty. Poprawka Holma nie obejmuje całej tabeli (64 porównania), ale kluczowe wyniki mają p < 0,001. Dla RQ4 możesz dodać tabelę: SARIMAX ma ok. 16 parametrów (wynika ze specyfikacji, nie z biblioteki) i MAE 17,20, ARX_X ok. 336 (14 na godzinę), LEAR_X ok. 1,2 tys. niezerowych (mediana 51 na godzinę z końca 2025), XGB_X 600 drzew głębokości 7 i MAE 15,20 (−11,6% wobec SARIMAX). Interpretacja: współczynniki wprost (ARX, SARIMAX), współczynniki mylące przy współliniowości (LEAR_X), SHAP post hoc (XGB_X).
+H1: potwierdzona względem SARIMA (odporna), a względem LEAR_X tylko w 2023. Bez zmiennych egzogenicznych LEAR jest istotnie lepszy od XGBoost w obu specyfikacjach w 2025 i reżimie OZE.
+H2: niepotwierdzona dla kryzysu, a dla cen ujemnych potwierdzona opisowo. Do sprawdzenia zostaje niespójność z latami: gdyby ceny ujemne były przyczyną, przewaga XGB_X nad LEAR_X powinna być największa w 2025 (najwięcej ujemnych godzin), a rocznie jest tam zerowa. Skrypt poniżej rozstrzyga, czy przewaga na dobach z ceną ujemną występuje w każdym roku.
+H3: potwierdzona względem ARX i LEAR (obie specyfikacje, całość i reżimy z wyjątkiem stabilnego), a względem SARIMAX niepotwierdzona.
+3. Dobra z ujemną ceną według roku (H2)
+
+DM xgb_x vs lear_x, różnica MAE w % (ujemna = XGB_X lepszy). W nawiasach okno 364 dni:
+
+Rok	doby z ujemną ceną	pozostałe doby
+2023	−23,8% (−18,6%), tylko 5 dób	−11,5% (−5,5%)
+2024	−13,6% (−12,1%), 49 dób, p=0,048 (<0,001)	−10,9% (−2,4%)
+2025	−12,2% (−11,4%), 70 dób, p=0,006 (0,005)	+4,1% (+2,9%), 295 dób
+To wyjaśnia zagadkę z poprzedniej wiadomości. W 2025 roczna różnica jest zerowa (−0,1%), bo przewaga na 70 dobach z ujemną ceną (−12%) kasuje się z gorszym wynikiem XGB_X na pozostałych 295 dobach (+4%).
+Przewaga na dobach z ujemną ceną jest odporna: ten sam kierunek i skala (−11 do −14%) w 2024 i 2025, w obu specyfikacjach okna, przy p ≤ 0,05. Na pozostałych dobach jest niestabilna: zależy od okna w 2023–2024 i odwraca się w 2025.
+Zastrzeżenia, które trzeba zapisać w tekście:
+Doby wybieramy po zrealizowanej cenie, więc to warunkowanie na wyniku.
+Podział według roku powstał po obejrzeniu wyników zbiorczych, więc analiza jest post hoc i p nie są korygowane.
+Doba z ujemną ceną to doba z bardzo niskim obciążeniem rezydualnym, więc nie da się odróżnić efektu znaku ceny od efektu niskiego obciążenia.
+Wersja H2, którą wyniki wspierają: przewaga ML nad klasą ekonometryczną występuje na dobach z ujemnymi cenami, a nie w kryzysie. To pasuje do wyniku z 8e (LEAR_NL zamyka 44% luki w reżimie OZE), ale mechanizmu to nie dowodzi.
+1. Dlaczego nie teraz
+Błędy pytest (34 passed, 2 errors). Pytest bierze funkcję test_groups z report.py za test (nazwa zaczyna się od test_) i zgłasza brak fixture days. Dodatkowo run_test.py pasuje do wzorca *_test.py i też jest zbierany. Nie ma to wpływu na wyniki, ale testy muszą być czyste przed tagiem.
+Zakres zamrożenia był za szeroki. freeze.py porównuje z tagiem cały src/ i config/. Kroki 9–10 (Streamlit, Actions, codzienne prognozy) prawdopodobnie dodadzą pliki w src/, a wtedy test 2026 odmówi uruchomienia z komunikatem „kod różni się od taga”. Zawężam zamrożenie do ścieżek, które wpływają na wyniki. Zmiany w src/data zabezpiecza odcisk danych.
+Protokół nie ma jeszcze oczekiwania dla dób z ujemną ceną. Dopisujemy je przed tagiem, bo dopiero z wyników poniżej wynika, co tam widzieliśmy (sekcja 3).
+2. Próba generalna
+
+Obie ścieżki działają: 15 modeli plus lear_nl w main, w sens liczą się tylko modele ze zmienioną konfiguracją (reszta współdzieli prognozy), raport się generuje, a „DM: za mało dób” przy 14 dobach to oczekiwane zachowanie. Wyniki z 14 dób grudnia nic nie mówią o jakości modeli. Pomiar czasu: pojedynczy blok SARIMA zajął 192 s (main) i 95 s (sens), SARIMAX 224 s i 108 s. Z czasów pełnych przebiegów (SARIMA 47 min dla 66 bloków, SARIMAX 118 min) szacuję pełny rok 2026 (14 bloków) na ok. 10 i ok. 25 min dla SARIMA i SARIMAX, a całość main na około godzinę. To tylko szacunek.
