@@ -12,6 +12,8 @@ from src.evaluation.report import groups
 from src.features.panels import DB_PATH, load_panels
 from src.utils.config import PROJECT_ROOT, load_config
 
+import argparse
+
 CFG = load_config()
 EV = CFG["evaluation"]
 MODELS = ["naive_mixed", "arx", "arx_x", "lear", "lear_x", "sarima", "sarimax", "var1",
@@ -26,12 +28,15 @@ def main() -> None:
     price = load_panels()["price"]
     days = price.loc[pd.Timestamp(EV["regime_analysis"]["start"]): pd.Timestamp(EV["validation"]["end"])].index
     y = price.reindex(days)
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--window", type=int, default=90)
+    args = ap.parse_args()
 
     daily = {}
     for m in MODELS:
         pred = load_forecasts(DB_PATH, m).reindex(days)
         for level in LEVELS:
-            lo, hi = empirical_intervals(pred, y, level)
+            lo, hi = empirical_intervals(pred, y, level, window=args.window)
             daily[(m, level)] = daily_interval_metrics(lo, hi, y, level)
 
     valid = pd.concat([d["score"].notna() for d in daily.values()], axis=1).all(axis=1)
@@ -61,8 +66,8 @@ def main() -> None:
     dm = pd.DataFrame(rows)
 
     out = PROJECT_ROOT / "reports" / "tables"
-    pd.concat(frames).to_csv(out / "interval_results.csv", index=False, encoding="utf-8-sig")
-    dm.to_csv(out / "interval_dm.csv", index=False, encoding="utf-8-sig")
+    pd.concat(frames).to_csv(out / f"interval_results_w{args.window}.csv", index=False, encoding="utf-8-sig")
+    dm.to_csv(out / f"interval_dm_w{args.window}.csv", index=False, encoding="utf-8-sig")
     print("\n=== Diebold-Mariano na wyniku przedziałowym 90% (DM < 0: A lepszy od B) ===")
     print(dm.round(4).to_string(index=False))
 
