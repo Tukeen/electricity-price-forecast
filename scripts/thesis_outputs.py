@@ -39,6 +39,11 @@ from src.utils.config import PROJECT_ROOT, load_config
 
 CFG = load_config()
 REGIMES = CFG["regimes"]
+REG_LABEL = {"oze_ujemne": "OZE/ujemne"}  # etykiety reżimów na wykresach
+
+
+def rl(g):
+    return REG_LABEL.get(g, g)
 PERIODS = {"dev": (pd.Timestamp("2021-01-01"), pd.Timestamp("2025-12-31")),
            "test": (pd.Timestamp("2026-01-01"), pd.Timestamp("2026-12-31"))}
 TABLES = {("dev", "main"): ["forecasts", "forecasts_diag"],
@@ -248,7 +253,7 @@ def main() -> None:
     fig, ax = plt.subplots(figsize=(0.75 * rm.shape[1] + 2.5, 0.38 * rm.shape[0] + 1.2))
     lim = max(abs(rm.to_numpy() - 1).max(), 0.05)
     im = ax.imshow(rm.to_numpy(), cmap="RdBu_r", norm=TwoSlopeNorm(1.0, 1 - lim, 1 + lim), aspect="auto")
-    ax.set_xticks(range(rm.shape[1]), rm.columns, rotation=30, ha="right")
+    ax.set_xticks(range(rm.shape[1]), [rl(c) for c in rm.columns], rotation=30, ha="right")
     ax.set_yticks(range(rm.shape[0]), [nm(m) for m in rm.index])
     for i, j in itertools.product(range(rm.shape[0]), range(rm.shape[1])):
         ax.text(j, i, f"{rm.iat[i, j]:.2f}", ha="center", va="center", fontsize=7.5)
@@ -281,8 +286,12 @@ def main() -> None:
     ax.grid(False)
     ax.set_xlim(0.5, n - 0.5)
     ax.set_ylim(n - 1.5, -0.5)
-    ax.set_xlabel("B (kolumna)")
     ax.set_ylabel("A (wiersz); DM < 0 (niebieski): A lepszy od B")
+    omitted = [nm(m) for m in models if m not in order and m != "naive_mixed"]
+    note = "DM z korektą Holma: * p<0,05; ** p<0,01; *** p<0,001."
+    if omitted:
+        note += f"\nPominięto: {', '.join(omitted)} (pełna macierz: t3_dm_wszystkie_pary.csv)."
+    ax.set_xlabel("B (kolumna)\n" + note)
     fig_save(fig, out / "f4_DM_macierz.png")
 
     # F5: przykładowy tydzień wokół najniższej ceny okresu
@@ -324,7 +333,7 @@ def main() -> None:
                 x0 = max(pd.Timestamp(r["start"]), days[0])
                 if x0 > days[0]:
                     ax.axvline(x0, color="grey", lw=0.6, ls=":")
-                ax.text(x0, top, f" {name}", va="top", fontsize=7, color="grey")
+                ax.text(x0, top, f" {rl(name)}", va="top", fontsize=7, color="grey")
             ax.set_xlim(days[0], days[-1])
             ax.xaxis.set_major_locator(mdates.YearLocator())
             ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
@@ -341,7 +350,7 @@ def main() -> None:
     for k, col in enumerate(p8.columns):
         ax.bar(np.arange(len(g8)) + k * w, p8[col], w, label=col.replace(" -> ", " → "),
                color=["#0072B2", "#56B4E9", "#009E73", "#D55E00", "#E69F00", "#CC79A7"][k % 6])
-    ax.set_xticks(np.arange(len(g8)) + 0.4 - w / 2, g8)
+    ax.set_xticks(np.arange(len(g8)) + 0.4 - w / 2, [rl(g) for g in g8])
     ax.axhline(0, color="black", lw=0.6)
     ax.set_ylabel("zmiana MAE po dodaniu zm. zewnętrznych [%]")
     ax.legend(ncol=3, fontsize=7, frameon=False, loc="upper center", bbox_to_anchor=(0.5, -0.12))
