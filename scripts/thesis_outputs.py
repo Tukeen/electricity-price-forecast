@@ -125,6 +125,13 @@ def main() -> None:
         sys.exit("Brak prognoz (lub benchmarku naive_mixed) w bazie dla wybranego okresu.")
     errs = {m: (p - true) for m, p in preds.items()}
     errs = {m: e.loc[e.index.isin(true.dropna(how="all").index)] for m, e in errs.items()}
+    # modele z niepełnym pokryciem (np. lear_nl w okresie rozwojowym liczono tylko dla 2022-2025) nie mogą zawężać
+    # wspólnego zbioru dób dla pozostałych; porównujemy je osobno (tabela t8)
+    n_full = {m: int(e.notna().all(axis=1).sum()) for m, e in errs.items()}
+    partial = [m for m, n in n_full.items() if n < 0.9 * n_full["naive_mixed"]]
+    errs_partial = {m: errs.pop(m) for m in partial}
+    for m in partial:
+        print(f"Uwaga: {m} ma prognozy tylko dla {n_full[m]} dób; wyłączony ze wspólnego zestawienia (zob. t8).")
     errs = common_days(errs)
     days = errs["naive_mixed"].index
     price = true.loc[days]
@@ -187,6 +194,20 @@ def main() -> None:
                     rows.append({"grupa": g, "ML": mx, "ECON": ex, "Delta [p.p.]": 100 * d, "CI dolna": 100 * lo,
                                  "CI górna": 100 * hi, "P(Delta<0)": prob})
     save_csv(pd.DataFrame(rows), out / "t7_H3_bootstrap.csv", args.pl)
+
+    rows = []
+    for m, e in errs_partial.items():
+        d = e.index[e.notna().all(axis=1) & e.index.isin(days)]
+        if not len(d):
+            continue
+        for k in [m] + [r for r in ("lear_x", "xgb_x", "mlp_x", "sarimax") if r in errs]:
+            ek = errs_partial[k] if k == m else errs[k]
+            row = {"model": k, "dni": len(d), "od": d[0].date(), "do": d[-1].date(), "MAE": mae(ek.loc[d])}
+            if k != m and "lear_x" in errs:
+                row["DM (model częściowy vs ten model)"], row["p"] = diebold_mariano(e.loc[d], ek.loc[d])
+            rows.append(row)
+    if rows:
+        save_csv(pd.DataFrame(rows), out / "t8_modele_czesciowe.csv", args.pl)
 
     # ---------------- wykresy ----------------
     plt.rcParams.update({"font.size": 9, "axes.spines.top": False, "axes.spines.right": False,
