@@ -16,9 +16,11 @@ poleceń redakcyjnych. Treść pogrupowano tematycznie i oczyszczono bez zmiany 
 - EDA i testy na danych do 31.12.2025 (2026 tylko opisowo).
 - Prognozy egzogeniczne z ENTSO-E (zapotrzebowanie, wiatr lądowy, PV): zakładamy znajomość prognozy na dobę D przy
   prognozowaniu doby D. Wiatr i PV na dobę następną mogą być publikowane po zamknięciu fixingu (ok. 12:00); w pracy
-  traktujemy je jako przybliżenie prognoz dostępnych uczestnikom rynku z własnych źródeł. Obserwacja z 11.11.2026
-  (godz. 15:00 lokalnie): ceny i prognoza obciążenia do 12.11, prognozy wiatru i PV tylko do 11.11. Godziny publikacji
-  w trakcie pomiaru (exog_log.txt); opisać w pracy jako ograniczenie (zob. sekcja 12).
+  traktujemy je jako przybliżenie prognoz dostępnych uczestnikom rynku z własnych źródeł. Pomiar z
+  11.11.2026 (exog_log.txt): o 15:17 lokalnie ceny i prognoza obciążenia do 12.11, wiatr i PV tylko do 11.11; o 18:14
+  wiatr, PV (B16, B19) i seria B18 również do 12.11. Publikacja wiatru i PV mieści się więc między 15:17 a 18:14, czyli
+  po aukcji; opisać w pracy jako ograniczenie (zob. sekcja 12). Seria B18 (wiatr morski) istnieje na platformie dopiero od
+  17.06.2026 i nie jest używana w modelach.
 
 ## 2. Reżimy, okno i schemat walidacji (kroki 4–5)
 - Granice reżimów wiążemy z obserwowalnymi zdarzeniami: stabilny 2020-01-01 → 2021-08-31, kryzys 2021-09-01 →
@@ -140,10 +142,13 @@ DM xgb_x vs lear_x, różnica MAE w % (ujemna = XGB_X lepszy); w nawiasach okno 
 ## 11. Warstwa operacyjna (kroki 9–10, 11.11.2026)
 - Aplikacja Streamlit (Community Cloud) czyta wyłącznie app_data/*.csv i status.json; workflow GitHub Actions
   `daily-forecast` (sekret ENTSOE_API_KEY) uruchamia ingest, build_hourly, run_daily i commituje app_data.
-- Polityka modeli egzogenicznych: opcja B – dwa biegi dziennie (08:40 UTC: modele bez egzogenicznych; 10:40 UTC:
-  `--only-missing`, modele _x i sarimax, jeśli prognozy dostępne). Pierwsza prognoza (doba, model) obowiązuje.
-  Wstępna obserwacja wskazuje, że prognozy wiatru i PV mogą pojawiać się po aukcji, więc bieg 10:40 może nic nie policzyć;
-  kod jest na to odporny. Decyzja o modelach _x w aplikacji po pomiarach (exog_log.txt).
+- Polityka modeli egzogenicznych: opcja A – jeden bieg dziennie (08:40 UTC), wyłącznie modele ex ante (naive_mixed, arx,
+  lear, xgb, mlp, sarima). Modele _x i sarimax są oceniane tylko w badaniu. Powód: prognozy wiatru i PV na dobę następną
+  pojawiają się po aukcji (pomiar 11.11.2026: brak o 15:17, są o 18:14; termin z art. 14 ust. 2 lit. d rozp. 543/2013
+  to 18:00 w D−1). Pierwsza prognoza (doba, model) obowiązuje. Wcześniejszy plan z drugim biegiem 10:40 UTC (opcja B)
+  odrzucono: oba biegi wypadały przed publikacją, a latem 10:40 UTC to 12:40 lokalnie, po zamknięciu aukcji.
+- Uwaga: build_hourly obcina tabelę do ostatniej ceny, więc prognozy zmiennych na dobę D bez cen nie trafiają do `hourly`;
+  przy opcji A nie ma to znaczenia, bo modele _x nie są liczone w trybie operacyjnym.
 - Rozdział warstw: badanie (zamrożone; zakładka „Wyniki badania”: Rozwój 2021–2025 i Test 2026) jest odrębne od
   aplikacji na żywo (Prognoza, Skuteczność na żywo, Dane historyczne). Wyniki na żywo nie służą do weryfikacji hipotez, a
   dni listopad–grudzień 2026 leżą w roku testowym: nie wolno zmieniać modeli na podstawie ich skuteczności.

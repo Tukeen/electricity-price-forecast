@@ -63,8 +63,6 @@ def tab_forecast(status: dict, prices: pd.DataFrame, log: pd.DataFrame) -> None:
         with st.expander("Status ostatniego uruchomienia"):
             st.write(f"Uruchomienie (UTC): {status.get('run_utc')} | ostatnia doba ze znanymi cenami: "
                      f"{status.get('last_price_day')} | wersja kodu: {status.get('code_version')}")
-            st.write(f"Prognozy zmiennych zewnętrznych na dobę {status.get('forecast_day')}: "
-                     f"{'dostępne' if status.get('exog_available') else 'niedostępne'}")
             st.dataframe(pd.DataFrame(status.get("models", {})).T, width="stretch")
  
  
@@ -206,9 +204,10 @@ prognozowaniu cen energii elektrycznej na polskim rynku dnia następnego, z uwzg
 **Dane.** ENTSO-E Transparency Platform: ceny RDN, prognozy zapotrzebowania oraz wiatru i PV. Rozdzielczość godzinowa
 (od 1.10.2025 średnia z czterech kwadransów).
  
-**Prognoza operacyjna.** Rano, przed zamknięciem aukcji, wyznaczany jest profil 24 cen na kolejną dobę. Modele ze
-zmiennymi zewnętrznymi (oznaczone „+ zm. zewnętrzne” oraz SARIMAX) wymagają prognoz zapotrzebowania, wiatru i PV
-dla całej doby, które ENTSO-E publikuje w różnych porach; jeśli ich jeszcze nie ma, model jest pomijany.
+**Prognoza operacyjna.** Rano, przed zamknięciem aukcji, wyznaczany jest profil 24 cen na kolejną dobę. W prognozie
+operacyjnej działają wyłącznie modele bez zmiennych zewnętrznych, ponieważ prognozy wiatru i PV na dobę następną
+ENTSO-E publikuje dopiero po południu (najpóźniej o 18:00), czyli po aukcji. Modele ze zmiennymi zewnętrznymi
+(„+ zm. zewnętrzne” oraz SARIMAX) są oceniane w badaniu, przy założeniu, że takie prognozy są znane.
 Pierwsza zapisana prognoza doby nie jest później zmieniana.
  
 **Ograniczenia.** Projekt badawczy; prognozy nie stanowią porady inwestycyjnej. W prognozie operacyjnej SARIMA(X) jest

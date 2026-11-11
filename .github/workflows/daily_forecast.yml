@@ -2,8 +2,7 @@ name: daily-forecast
 
 on:
   schedule:
-    - cron: "40 8 * * *"      # bieg poranny: modele bez zmiennych egzogenicznych (ex ante)
-    - cron: "40 10 * * *"     # bieg uzupełniający: modele _x/sarimax, gdy ENTSO-E opublikuje prognozy (przed wynikami aukcji)
+    - cron: "40 8 * * *"      # 09:40 (zima) / 10:40 (lato) czasu lokalnego, przed zamknięciem aukcji o 12:00
   workflow_dispatch:
 
 concurrency:
@@ -46,12 +45,7 @@ jobs:
 
       - run: python -m src.data.build_hourly
       - name: Prognoza operacyjna
-        run: |
-          if [ "${{ github.event.schedule }}" = "40 10 * * *" ]; then
-            python -m src.operational.run_daily --only-missing
-          else
-            python -m src.operational.run_daily
-          fi
+        run: python -m src.operational.run_daily
 
       - name: Zapis wyników
         run: |
