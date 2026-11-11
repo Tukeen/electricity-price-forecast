@@ -108,37 +108,95 @@ def tab_history(prices: pd.DataFrame) -> None:
     st.bar_chart(neg)
  
  
-def tab_research() -> None:
-    p = RESEARCH / "ml_results.csv"
-    if not p.exists():
-        st.info("Tabele z wynikami badania nie zostały jeszcze dodane do repozytorium.")
-        return
-    st.subheader("Okres rozwojowy 2021-2025 (rolling forecast, specyfikacja główna)")
-    df = pd.read_csv(p, encoding="utf-8-sig")
-    models = sorted(df["model"].unique())
+FREEZE_TAG = "pre-test-2026"
+
+
+def _csv(name: str) -> pd.DataFrame | None:
+    p = RESEARCH / name
+    return pd.read_csv(p, encoding="utf-8-sig") if p.exists() else None
+
+
+def _freeze_note() -> str:
+    info = RESEARCH / "frozen_data.json"
+    if info.exists():
+        try:
+            d = json.loads(info.read_text(encoding="utf-8"))
+            return f" Odcisk danych testowych: {str(d.get('fingerprint', d.get('sha256', '')))[:16] or 'zapisany w repozytorium'}."
+        except Exception:
+            return ""
+    return ""
+
+
+def _metric_table(df: pd.DataFrame, order: list[str], key: str) -> None:
+    models = sorted(df["model"].unique(), key=lambda m: (not m.startswith("naive"), m))
     default = [m for m in ["naive_mixed", "lear", "lear_x", "sarimax", "xgb", "xgb_x", "mlp_x"] if m in models]
-    chosen = st.multiselect("Modele", models, default=default)
-    metric = st.radio("Miara", ["MAE", "rMAE", "RMSE"], horizontal=True)
+    chosen = st.multiselect("Modele", models, default=default, key=f"models_{key}")
+    metric = st.radio("Miara", ["MAE", "rMAE", "RMSE"], horizontal=True, key=f"metric_{key}")
     if chosen:
         tab = df.pivot(index="grupa", columns="model", values=metric)[chosen]
-        order = [g for g in GROUP_ORDER if g in tab.index]
-        st.dataframe(tab.loc[order].round(3), width="stretch")
-    st.caption("MAE i RMSE w EUR/MWh; rMAE względem modelu naiwnego (D-1 / D-7). Rok 2025 posłużył do strojenia.")
-    g = RESEARCH / "exog_gain.csv"
-    if g.exists():
+        rows = [g for g in order if g in tab.index] or list(tab.index)
+        st.dataframe(tab.loc[rows].round(3), width="stretch")
+
+
+def _research_dev() -> None:
+    df = _csv("ml_results.csv")
+    if df is None:
+        st.info("Tabele z wynikami okresu rozwojowego nie zostały jeszcze dodane do repozytorium.")
+        return
+    st.subheader("Okres rozwojowy 2021-2025 (rolling forecast, specyfikacja główna)")
+    _metric_table(df, GROUP_ORDER, "dev")
+    st.caption("MAE i RMSE w EUR/MWh; rMAE względem modelu naiwnego (D-1 / D-7). Rok 2025 posłużył do strojenia "
+               "hiperparametrów, więc jego wyniki są zawyżone względem testu na danych nowych.")
+    g = _csv("exog_gain.csv")
+    if g is not None:
         st.subheader("Zmiana MAE po dodaniu zmiennych zewnętrznych [%]")
-        st.dataframe((pd.read_csv(g, index_col=0, encoding="utf-8-sig") * 100).round(1), width="stretch")
-    for name, title in (("test_main_results.csv", "Test końcowy 2026, specyfikacja główna"),
-                        ("test_sens_results.csv", "Test końcowy 2026, specyfikacja wrażliwości")):
-        t = RESEARCH / name
-        if t.exists():
-            st.subheader(title)
-            tt = pd.read_csv(t, encoding="utf-8-sig")
-            st.dataframe(tt.pivot(index="grupa", columns="model", values="MAE").round(3), width="stretch")
-    if not (RESEARCH / "test_main_results.csv").exists():
-        st.info("Wyniki testu końcowego na roku 2026 pojawią się po jego zakończeniu (styczeń 2027).")
- 
- 
+        st.dataframe((g.set_index(g.columns[0]) * 100).round(1), width="stretch")
+    for name, title in (("hypotheses_h3_bootstrap.csv", "H3: różnica zysków z zm. zewnętrznych (bootstrap blokowy)"),
+                        ("hypotheses_dm.csv", "Testy Diebolda-Mariano (okres rozwojowy)")):
+        t = _csv(name)
+        if t is not None:
+            with st.expander(title):
+                st.dataframe(t.round(3), width="stretch")
+
+
+def _research_test() -> None:
+    mains = {"Specyfikacja główna": "test_main", "Specyfikacja wrażliwości": "test_sens"}
+    found = {label_: pre for label_, pre in mains.items() if (RESEARCH / f"{pre}_results.csv").exists()}
+    if not found:
+        st.info("Test końcowy na roku 2026 zostanie uruchomiony jednorazowo w styczniu 2027, po zamknięciu roku "
+                "i zamrożeniu kodu oraz danych. Do tego czasu ta zakładka pozostaje pusta, a ocena modeli na danych "
+                "z lat 2021-2025 jest w zakładce „Rozwój 2021-2025”.")
+        return
+    spec = st.radio("Specyfikacja", list(found), horizontal=True)
+    pre = found[spec]
+    res = _csv(f"{pre}_results.csv")
+    st.subheader(f"Test końcowy 2026: {spec.lower()}")
+    order = ["całość", "Q1", "Q2", "Q3", "Q4"] + [f"{m:02d}" for m in range(1, 13)]
+    _metric_table(res, order, pre)
+    st.caption("Grupy: cały rok, kwartały (Q1-Q4) i miesiące (01-12). rMAE względem modelu naiwnego (D-1 / D-7).")
+    for suffix, title in (("dm", "Testy Diebolda-Mariano (p_holm dla czterech testów potwierdzających)"),
+                          ("h3_bootstrap", "H3: bootstrap blokowy"),
+                          ("negative_days", "Doby z ujemną ceną i pozostałe"),
+                          ("intervals90_monthly", "H4: przedziały 90% według miesięcy")):
+        t = _csv(f"{pre}_{suffix}.csv")
+        if t is not None:
+            with st.expander(title):
+                st.dataframe(t.round(3), width="stretch")
+
+
+def tab_research() -> None:
+    st.warning(
+        "**Wyniki zamrożone.** Ta zakładka zawiera wyniki analizowane w pracy magisterskiej. Nie są aktualizowane "
+        "przez codzienną automatyzację: powstają jednorazowo i trafiają tu ręcznie. Kod badania jest zamrożony "
+        f"tagiem git `{FREEZE_TAG}` (commit d3bbfa7), a test na roku 2026 uruchamiany jest raz, w styczniu 2027."
+        + _freeze_note())
+    dev, test = st.tabs(["Rozwój 2021-2025", "Test 2026"])
+    with dev:
+        _research_dev()
+    with test:
+        _research_test()
+
+
 def tab_about() -> None:
     st.markdown("""
 **Cel.** Porównanie metod ekonometrycznych (ARX, LEAR, SARIMA/SARIMAX) i uczenia maszynowego (XGBoost, MLP) w

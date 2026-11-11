@@ -12,11 +12,21 @@
 5. **Testy drugorzędne i opisowe.** DM dla pozostałych par i kwartałów (bez korekty, eksploracyjnie);
    doby z ujemną ceną i pozostałe (opisowo); H3: bootstrap blokowy (7 dób, 2000 prób, ziarno 42);
    H4: pokrycie i wynik przedziałowy 90% (empiryczne kwantyle z 90 dób, historia z 2025), według miesięcy.
-   Zadeklarowany wcześniej test drugorzędny: DM xgb_x vs lear_x na dobach z ujemną ceną (obie specyfikacje), p bez korekty.” W punkcie 7 dodaj oczekiwanie (e): „XGB_X ma niższe MAE niż LEAR_X na dobach z ujemną ceną (w 2024–2025 o 11–14% w obu specyfikacjach, przewaga ma charakter opisowy: podział po zrealizowanej cenie). Na pozostałych dobach różnica jest niestabilna (od −11% do +4% w latach 2023–2025).
+   Zadeklarowany wcześniej test drugorzędny: DM xgb_x vs lear_x na dobach z ujemną ceną (obie specyfikacje),
+   p bez korekty.
 6. **Zasady.** Po uruchomieniu testu nie zmieniamy modeli, hiperparametrów ani protokołu. Błędy techniczne
    harnessu poprawiamy tylko z zapisem w decisions.md. Raportujemy wszystkie wyniki niezależnie od kierunku.
 7. **Oczekiwania z okresu rozwojowego (2021-2025).** (a) Modele z egzogenicznymi lepsze od bez nich;
    (b) XGB_X ma najniższe MAE, lecz różnica do LEAR_X jest mała lub nieistotna; (c) bez egzogenicznych LEAR
-   nie jest gorszy od XGBoost; (d) pokrycie przedziałów jesienią 2026 niższe niż w pozostałych miesiącach.
+   nie jest gorszy od XGBoost; (d) pokrycie przedziałów jesienią 2026 niższe niż w pozostałych miesiącach;
+   (e) XGB_X ma niższe MAE niż LEAR_X na dobach z ujemną ceną (w 2024–2025 o 11–14% w obu specyfikacjach;
+   przewaga ma charakter opisowy, bo podział jest po zrealizowanej cenie). Na pozostałych dobach różnica jest
+   niestabilna (od −11% do +4% w latach 2023–2025).
 8. **Ograniczenia.** SARIMA(X): estymacja co 28 dób; prognozy egzogeniczne ENTSO-E w wersji końcowej;
    przedziały niedoszacowane; strojenie na jednym roku (2025); wnioski z okresu rozwojowego są wstępne.
+
+---
+**Uwaga redakcyjna (11.11.2026).** W wersji zatwierdzonej z tagiem `pre-test-2026` fragment dotyczący oczekiwania (e)
+znalazł się omyłkowo na końcu punktu 5 razem z wklejoną instrukcją redakcyjną. Przeniesiono go do punktu 7 jako
+(e), a instrukcję usunięto. Treść merytoryczna (oczekiwanie sformułowane na podstawie wyników okresu rozwojowego
+2021–2025, przed uruchomieniem testu) jest ta sama; plik nie należy do ścieżek objętych zamrożeniem kodu.
