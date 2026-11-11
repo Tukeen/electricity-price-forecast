@@ -25,6 +25,7 @@ import duckdb
 import matplotlib
 
 matplotlib.use("Agg")
+import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -61,6 +62,10 @@ CLASS = {"naive_mixed": "benchmark", "naive_daily": "benchmark", "arx": "ekonome
          "lear": "ekonometria", "lear_x": "ekonometria", "sarima": "ekonometria", "sarimax": "ekonometria",
          "var1": "ekonometria", "lear_nl": "ekonometria", "xgb": "ML", "xgb_x": "ML", "mlp": "ML", "mlp_x": "ML",
          "prophet": "inne", "prophet_x": "inne"}
+# styl linii wykresów czasowych: każdy model odróżnialny kolorem, kreską i znacznikiem
+LINE = {"naive_mixed": ("#7F7F7F", ":", None), "lear": ("#56B4E9", "--", "o"), "lear_x": ("#0072B2", "-", "o"),
+        "sarimax": ("#003F5C", "-.", "s"), "xgb": ("#E69F00", "--", "^"), "xgb_x": ("#D55E00", "-", "^"),
+        "mlp_x": ("#8C510A", "-.", "D")}
 COLORS = {"benchmark": "#7F7F7F", "ekonometria": "#0072B2", "ML": "#D55E00", "inne": "#009E73"}
 
 
@@ -229,8 +234,8 @@ def main() -> None:
     keys = [k for k in keys if k in pivot.index]
     fig, ax = plt.subplots(figsize=(7, 3.8))
     for m in [s for s in SHOW if s in pivot.columns]:
-        ax.plot(keys, pivot.loc[keys, m], marker="o", ms=3, label=nm(m), color=COLORS[CLASS[m]],
-                ls="-" if m.endswith("_x") or m == "sarimax" else "--" if CLASS[m] != "benchmark" else ":")
+        col, ls, mk = LINE[m]
+        ax.plot(keys, pivot.loc[keys, m], marker=mk, ms=4, label=nm(m), color=col, ls=ls)
     ax.set_ylabel("MAE [EUR/MWh]")
     ax.set_xlabel("rok" if is_dev else "miesiąc 2026")
     ax.legend(ncol=2, fontsize=8, frameon=False)
@@ -288,19 +293,20 @@ def main() -> None:
     xs = np.arange(len(wk) * 24)
     ax.plot(xs, price.loc[wk].to_numpy().ravel(), color="black", lw=1.6, label="cena rzeczywista")
     for m in [s for s in ("lear_x", "xgb_x", "sarimax") if s in preds]:
-        ax.plot(xs, preds[m].reindex(wk).to_numpy().ravel(), lw=1, color=COLORS[CLASS[m]],
+        ax.plot(xs, preds[m].reindex(wk).to_numpy().ravel(), lw=1.2, color=LINE[m][0],
                 ls="-" if m != "sarimax" else "--", label=nm(m))
     ax.axhline(0, color="grey", lw=0.6)
     ax.set_xticks(np.arange(0, len(wk) * 24, 24), [d.strftime("%d.%m") for d in wk])
     ax.set_ylabel("EUR/MWh")
+    ax.set_xlabel(f"doby dostawy, {wk[0].year} r.")
     ax.legend(ncol=4, fontsize=8, frameon=False)
     fig_save(fig, out / "f5_przyklad_tygodnia.png")
 
     # F6: MAE według godzin
     fig, ax = plt.subplots(figsize=(7, 3.6))
     for m in [s for s in SHOW if s in t6.columns]:
-        ax.plot(t6.index, t6[m], label=nm(m), color=COLORS[CLASS[m]],
-                ls="-" if m.endswith("_x") or m == "sarimax" else "--" if CLASS[m] != "benchmark" else ":")
+        col, ls, mk = LINE[m]
+        ax.plot(t6.index, t6[m], label=nm(m), color=col, ls=ls, marker=mk, ms=4, markevery=3)
     ax.set_xlabel("godzina doby dostawy (czas lokalny)")
     ax.set_ylabel("MAE [EUR/MWh]")
     ax.legend(ncol=2, fontsize=8, frameon=False)
@@ -311,11 +317,17 @@ def main() -> None:
         fig, ax = plt.subplots(figsize=(7.5, 3.6))
         for other in [s for s in ("lear_x", "sarimax") if s in daily]:
             ax.plot(days, (daily[other] - daily["xgb_x"]).cumsum(), label=f"{nm(other)} - {nm('xgb_x')}",
-                    color=COLORS[CLASS[other]], ls="-" if other == "lear_x" else "--")
+                    color=LINE[other][0], ls="-" if other == "lear_x" else "--")
         if is_dev:
+            top = ax.get_ylim()[1]
             for name, r in REGIMES.items():
-                ax.axvline(pd.Timestamp(r["start"]), color="grey", lw=0.6, ls=":")
-                ax.text(max(pd.Timestamp(r["start"]), days[0]), ax.get_ylim()[1], f" {name}", va="top", fontsize=7, color="grey")
+                x0 = max(pd.Timestamp(r["start"]), days[0])
+                if x0 > days[0]:
+                    ax.axvline(x0, color="grey", lw=0.6, ls=":")
+                ax.text(x0, top, f" {name}", va="top", fontsize=7, color="grey")
+            ax.set_xlim(days[0], days[-1])
+            ax.xaxis.set_major_locator(mdates.YearLocator())
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
         ax.axhline(0, color="black", lw=0.6)
         ax.set_ylabel("skumulowana różnica MAE dobowego [EUR/MWh]")
         ax.legend(frameon=False, fontsize=8, loc="upper left")
