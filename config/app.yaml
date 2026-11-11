@@ -1,0 +1,6 @@
+operational:
+  # Modele bez zmiennych zewnętrznych działają ex ante (rano, przed zamknięciem aukcji).
+  # Modele ze zmiennymi zewnętrznymi (_x oraz sarimax) są pomijane automatycznie, dopóki ENTSO-E
+  # nie opublikuje prognoz zapotrzebowania, wiatru i PV dla całej doby D (patrz sekcja 11 dokumentu).
+  models: [naive_mixed, arx, lear, xgb, mlp, sarima, arx_x, lear_x, xgb_x, mlp_x, sarimax]
+  history_start: "2024-01-01"                                    # od kiedy historia cen trafia do aplikacji

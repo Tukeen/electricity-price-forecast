@@ -1,0 +1,67 @@
+name: daily-forecast
+
+on:
+  schedule:
+    - cron: "40 8 * * *"      # bieg poranny: modele bez zmiennych egzogenicznych (ex ante)
+    - cron: "40 10 * * *"     # bieg uzupełniający: modele _x/sarimax, gdy ENTSO-E opublikuje prognozy (przed wynikami aukcji)
+  workflow_dispatch:
+
+concurrency:
+  group: daily-forecast
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  forecast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-pipeline.txt
+
+      - run: pip install -r requirements-pipeline.txt
+      - run: python -m pytest -q
+
+      - name: Klucz pamięci podręcznej (miesiąc)
+        id: ym
+        run: echo "ym=$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v4
+        with:
+          path: data/raw/entsoe
+          key: entsoe-raw-${{ steps.ym.outputs.ym }}
+          restore-keys: entsoe-raw-
+
+      - name: Pobranie danych ENTSO-E
+        env:
+          ENTSOE_API_KEY: ${{ secrets.ENTSOE_API_KEY }}
+        run: python -m src.data.ingest
+
+      - run: python -m src.data.build_hourly
+      - name: Prognoza operacyjna
+        run: |
+          if [ "${{ github.event.schedule }}" = "40 10 * * *" ]; then
+            python -m src.operational.run_daily --only-missing
+          else
+            python -m src.operational.run_daily
+          fi
+
+      - name: Zapis wyników
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app_data
+          if git diff --cached --quiet; then
+            echo "Brak zmian"
+          else
+            git commit -m "Prognoza operacyjna $(date -u +%F)"
+            git pull --rebase origin main
+            git push origin main
+          fi
