@@ -1,9 +1,9 @@
 {
-  "run_utc": "2026-11-11T14:38:56+00:00",
+  "run_utc": "2026-11-12T10:11:55+00:00",
   "forecast_day": "2026-11-13",
   "last_price_day": "2026-11-12",
   "exog_available": false,
-  "code_version": "49f2a29",
+  "code_version": "53d30df",
   "models": {
     "naive_mixed": {
       "status": "ok",
@@ -19,30 +19,15 @@
     },
     "xgb": {
       "status": "ok",
-      "seconds": 1
+      "seconds": 0
     },
     "mlp": {
       "status": "ok",
-      "seconds": 4
+      "seconds": 3
     },
     "sarima": {
       "status": "ok",
-      "seconds": 110
-    },
-    "arx_x": {
-      "status": "pominięty: brak prognoz zmiennych egzogenicznych na 2026-11-13"
-    },
-    "lear_x": {
-      "status": "pominięty: brak prognoz zmiennych egzogenicznych na 2026-11-13"
-    },
-    "xgb_x": {
-      "status": "pominięty: brak prognoz zmiennych egzogenicznych na 2026-11-13"
-    },
-    "mlp_x": {
-      "status": "pominięty: brak prognoz zmiennych egzogenicznych na 2026-11-13"
-    },
-    "sarimax": {
-      "status": "pominięty: brak prognoz zmiennych egzogenicznych na 2026-11-13"
+      "seconds": 67
     }
   }
 }
