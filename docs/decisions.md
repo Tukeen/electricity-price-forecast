@@ -142,7 +142,7 @@ DM xgb_x vs lear_x, różnica MAE w % (ujemna = XGB_X lepszy); w nawiasach okno 
 ## 11. Warstwa operacyjna (kroki 9–10, 11.11.2026)
 - Aplikacja Streamlit (Community Cloud) czyta wyłącznie app_data/*.csv i status.json; workflow GitHub Actions
   `daily-forecast` (sekret ENTSOE_API_KEY) uruchamia ingest, build_hourly, run_daily i commituje app_data.
-- Polityka modeli egzogenicznych: opcja A – jeden bieg dziennie (08:40 UTC), wyłącznie modele ex ante (naive_mixed, arx,
+- Polityka modeli egzogenicznych: opcja A – wyłącznie modele ex ante (naive_mixed, arx,
   lear, xgb, mlp, sarima). Modele _x i sarimax są oceniane tylko w badaniu. Powód: prognozy wiatru i PV na dobę następną
   pojawiają się po aukcji (pomiar 11.11.2026: brak o 15:17, są o 18:14; termin z art. 14 ust. 2 lit. d rozp. 543/2013
   to 18:00 w D−1). Pierwsza prognoza (doba, model) obowiązuje. Wcześniejszy plan z drugim biegiem 10:40 UTC (opcja B)
@@ -152,7 +152,11 @@ DM xgb_x vs lear_x, różnica MAE w % (ujemna = XGB_X lepszy); w nawiasach okno 
 - Rozdział warstw: badanie (zamrożone; zakładka „Wyniki badania”: Rozwój 2021–2025 i Test 2026) jest odrębne od
   aplikacji na żywo (Prognoza, Skuteczność na żywo, Dane historyczne). Wyniki na żywo nie służą do weryfikacji hipotez, a
   dni listopad–grudzień 2026 leżą w roku testowym: nie wolno zmieniać modeli na podstawie ich skuteczności.
-- Horyzont prognoz: doba następna (D+1), zgodnie z rynkiem dnia następnego.
+- Horyzont prognoz: doba rozstrzygana w najbliższej aukcji. W badaniu jest to doba D przy cenach znanych do D−1. W trybie
+  operacyjnym biegi odbywają się po publikacji wyników aukcji (cron 12:10 UTC i zapasowy 16:10 UTC), więc prognozowana
+  jest doba pojutrzejsza, a zbiór informacji (ceny do D−1) jest taki sam jak w badaniu. Powód zmiany (15.11.2026):
+  GitHub uruchamiał biegi zaplanowane na 06:40 i 08:40 UTC z opóźnieniem 7–9 h, czyli po aukcji; termin biegu wypadał
+  raz przed, raz po publikacji wyników, co groziło lukami w dzienniku. Biegi po publikacji eliminują ten problem.
 - W prognozie operacyjnej SARIMA(X) estymowany codziennie (w badaniu raz na 28 dób).
 - Schemat testu 2026: prognoza krocząca (dla każdej doby ponowna estymacja na oknie), nie jednorazowy trening do 2025.
 - Skrypt tabel i wykresów do rozdziału z wynikami: scripts/thesis_outputs.py (tylko czyta prognozy).

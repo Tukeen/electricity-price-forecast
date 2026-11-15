@@ -204,9 +204,10 @@ prognozowaniu cen energii elektrycznej na polskim rynku dnia następnego, z uwzg
 **Dane.** ENTSO-E Transparency Platform: ceny RDN, prognozy zapotrzebowania oraz wiatru i PV. Rozdzielczość godzinowa
 (od 1.10.2025 średnia z czterech kwadransów).
  
-**Prognoza operacyjna.** Rano, przed zamknięciem aukcji, wyznaczany jest profil 24 cen na kolejną dobę. W prognozie
-operacyjnej działają wyłącznie modele bez zmiennych zewnętrznych, ponieważ prognozy wiatru i PV na dobę następną
-ENTSO-E publikuje dopiero po południu (najpóźniej o 18:00), czyli po aukcji. Modele ze zmiennymi zewnętrznymi
+**Prognoza operacyjna.** Codziennie po publikacji wyników aukcji wyznaczany jest profil 24 cen dla doby, której cena
+rozstrzygnie się w najbliższej aukcji (dzień po jutrze). Model zna wtedy ceny do doby poprzedzającej dostawę, czyli
+tyle samo, ile w badaniu. Działają wyłącznie modele bez zmiennych zewnętrznych, ponieważ prognozy wiatru i PV
+ENTSO-E publikuje dopiero po południu dnia poprzedzającego dostawę (najpóźniej o 18:00), czyli po aukcji. Modele ze zmiennymi zewnętrznymi
 („+ zm. zewnętrzne” oraz SARIMAX) są oceniane w badaniu, przy założeniu, że takie prognozy są znane.
 Pierwsza zapisana prognoza doby nie jest później zmieniana.
  

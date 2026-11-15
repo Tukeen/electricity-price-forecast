@@ -2,8 +2,11 @@ name: daily-forecast
 
 on:
   schedule:
-    - cron: "40 6 * * *"      # bieg główny: 07:40 (zima) / 08:40 (lato) czasu lokalnego, zapas przed aukcją o 12:00
-    - cron: "40 8 * * *"      # bieg zapasowy (--only-missing): GitHub potrafi opóźniać lub pomijać zaplanowane uruchomienia
+    # Biegi po publikacji wyników aukcji (ok. 12:45 lokalnie = 11:45 UTC zimą, 10:45 UTC latem). Prognozowana jest doba
+    # rozstrzygana w najbliższej aukcji, czyli dzień po jutrze; zbiór informacji jak w badaniu (ceny do D−1).
+    # GitHub opóźnia zaplanowane biegi nawet o kilka godzin, ale każdy bieg do 12:45 dnia następnego daje tę samą dobę.
+    - cron: "10 12 * * *"     # bieg główny
+    - cron: "10 16 * * *"     # bieg zapasowy (--only-missing), gdy główny zostanie pominięty
   workflow_dispatch:
 
 concurrency:
@@ -47,7 +50,7 @@ jobs:
       - run: python -m src.data.build_hourly
       - name: Prognoza operacyjna
         run: |
-          if [ "${{ github.event.schedule }}" = "40 8 * * *" ]; then
+          if [ "${{ github.event.schedule }}" = "10 16 * * *" ]; then
             python -m src.operational.run_daily --only-missing
           else
             python -m src.operational.run_daily

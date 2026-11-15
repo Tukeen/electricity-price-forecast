@@ -10,9 +10,6 @@ truststore
 duckdb
 pyarrow
 pyyaml
-statsmodels
-matplotlib
-scikit-learn
 xgboost
 prophet
 holidays
