@@ -1,9 +1,9 @@
 {
-  "run_utc": "2026-11-16T21:57:40+00:00",
+  "run_utc": "2026-11-17T00:11:53+00:00",
   "forecast_day": "2026-11-18",
   "last_price_day": "2026-11-17",
   "exog_available": false,
-  "code_version": "29dcc10",
+  "code_version": "0f151c3",
   "models": {
     "naive_mixed": {
       "status": "ok",
