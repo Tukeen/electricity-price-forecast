@@ -1,9 +1,9 @@
 {
-  "run_utc": "2026-11-19T23:02:12+00:00",
-  "forecast_day": "2026-11-21",
-  "last_price_day": "2026-11-20",
+  "run_utc": "2026-11-20T20:01:56+00:00",
+  "forecast_day": "2026-11-22",
+  "last_price_day": "2026-11-21",
   "exog_available": false,
-  "code_version": "69c9409",
+  "code_version": "df38f8b",
   "models": {
     "naive_mixed": {
       "status": "ok",
@@ -23,11 +23,11 @@
     },
     "mlp": {
       "status": "ok",
-      "seconds": 4
+      "seconds": 5
     },
     "sarima": {
       "status": "ok",
-      "seconds": 94
+      "seconds": 121
     }
   }
 }
