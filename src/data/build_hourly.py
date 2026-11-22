@@ -61,7 +61,8 @@ def build() -> pd.DataFrame:
             s = s[s["currency"] == "EUR"]
         parts[col] = aggregate_hourly(s).set_index("timestamp_utc")
 
-    idx = pd.date_range(start, parts["price_eur_mwh"].index.max(), freq="h")
+    last = max(part.index.max() for part in parts.values())   # także godziny z samymi prognozami zewnętrznymi
+    idx = pd.date_range(start, last, freq="h")
     local = idx.tz_localize("UTC").tz_convert(TZ)
 
     df = pd.DataFrame({"timestamp_utc": idx})
