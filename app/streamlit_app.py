@@ -139,6 +139,24 @@ def best_model(ver: pd.DataFrame) -> tuple[str, str]:
 
 
 # ---------------------------------------------------------------- wykres dobowy
+def hover_layers(df: pd.DataFrame, x: str, xtype: str, y: str, order: list[str], scale: alt.Scale,
+                 x_title: str, x_format: str | None = None) -> alt.LayerChart:
+    """Pionowa linia przy najbliższym punkcie osi X, kropki na liniach i podpowiedź ze wszystkimi seriami."""
+    hover = alt.selection_point(fields=[x], nearest=True, on="pointerover", clear="pointerout", empty=False)
+    wide = df.pivot_table(index=x, columns="nazwa", values=y).reindex(columns=order).reset_index()
+    keys = {n: f"s{i}" for i, n in enumerate(order)}
+    wide = wide.rename(columns=keys)
+    tips = [alt.Tooltip(f"{x}:{xtype}", title=x_title, format=x_format) if x_format else
+            alt.Tooltip(f"{x}:{xtype}", title=x_title)]
+    tips += [alt.Tooltip(f"{k}:Q", title=n, format=".1f") for n, k in keys.items()]
+    rule = alt.Chart(wide).mark_rule(color="#888888", strokeWidth=1).encode(
+        x=f"{x}:{xtype}", opacity=alt.condition(hover, alt.value(0.7), alt.value(0)), tooltip=tips).add_params(hover)
+    dots = alt.Chart(df).mark_circle(size=50).encode(
+        x=f"{x}:{xtype}", y=f"{y}:Q", color=alt.Color("nazwa:N", scale=scale, legend=None),
+        opacity=alt.condition(hover, alt.value(1), alt.value(0)))
+    return dots + rule
+
+
 def day_chart(fc: pd.DataFrame, actual: pd.Series | None, highlight: str, height: int = 380) -> alt.Chart:
     df = fc.assign(nazwa=fc["model"].map(name))[["hour_local", "nazwa", "y_pred"]].rename(columns={"y_pred": "cena"})
     if actual is not None and actual.notna().any():
@@ -158,11 +176,10 @@ def day_chart(fc: pd.DataFrame, actual: pd.Series | None, highlight: str, height
         strokeWidth=alt.StrokeWidth("szer:Q", legend=None, scale=None),
         strokeDash=alt.StrokeDash("kreska:N", legend=None,
                                   scale=alt.Scale(domain=["ciągła", "przerywana"], range=[[1, 0], [5, 3]])),
-        tooltip=[alt.Tooltip("nazwa:N", title="model"), alt.Tooltip("hour_local:Q", title="godzina"),
-                 alt.Tooltip("cena:Q", title="EUR/MWh")],
     )
     zero = alt.Chart(pd.DataFrame({"y": [0]})).mark_rule(color="#BBBBBB").encode(y="y:Q")
-    return (zero + base.mark_line()).properties(height=height)
+    hov = hover_layers(df, "hour_local", "Q", "cena", order, color_scale(order), "godzina")
+    return (zero + base.mark_line() + hov).properties(height=height)
 
 
 # ---------------------------------------------------------------- zakładki
@@ -258,12 +275,13 @@ def tab_verify(ver: pd.DataFrame, prices: pd.DataFrame) -> None:
     daily["MAE 7 dób"] = daily.groupby("model")["abs_err"].transform(lambda s: s.rolling(7, min_periods=1).mean())
     daily["nazwa"] = daily["model"].map(name)
     names = sorted(daily["nazwa"].unique())
-    ch = alt.Chart(daily).mark_line().encode(
-        x=alt.X("delivery_date:T", title="doba dostawy", axis=alt.Axis(format="%d.%m", tickCount="day")), y=alt.Y("MAE 7 dób:Q", title="MAE, średnia z 7 dób [EUR/MWh]"),
-        color=alt.Color("nazwa:N", title=None, scale=color_scale(names), legend=alt.Legend(orient="bottom", columns=4)),
-        tooltip=["nazwa", alt.Tooltip("delivery_date:T", title="doba"), alt.Tooltip("MAE 7 dób:Q", format=".1f")],
-    ).properties(height=300)
-    st.altair_chart(ch, width="stretch")
+    daily = daily.rename(columns={"MAE 7 dób": "mae7"})
+    lines = alt.Chart(daily).mark_line().encode(
+        x=alt.X("delivery_date:T", title="doba dostawy", axis=alt.Axis(format="%d.%m", tickCount="day")),
+        y=alt.Y("mae7:Q", title="MAE, średnia z 7 dób [EUR/MWh]"),
+        color=alt.Color("nazwa:N", title=None, scale=color_scale(names), legend=alt.Legend(orient="bottom", columns=4)))
+    hov = hover_layers(daily, "delivery_date", "T", "mae7", names, color_scale(names), "doba", "%d.%m.%Y")
+    st.altair_chart((lines + hov).properties(height=300), width="stretch")
 
     with st.expander("Ceny historyczne"):
         tab_history(prices)
