@@ -1,9 +1,9 @@
 {
-  "run_utc": "2026-11-26T00:14:30+00:00",
-  "forecast_day": "2026-11-27",
-  "last_price_day": "2026-11-26",
+  "run_utc": "2026-11-26T21:26:45+00:00",
+  "forecast_day": "2026-11-28",
+  "last_price_day": "2026-11-27",
   "exog_available": false,
-  "code_version": "bc763f3",
+  "code_version": "73076d2",
   "models": {
     "naive_mixed": {
       "status": "ok",
@@ -15,7 +15,7 @@
     },
     "lear": {
       "status": "ok",
-      "seconds": 1
+      "seconds": 0
     },
     "xgb": {
       "status": "ok",
@@ -23,11 +23,11 @@
     },
     "mlp": {
       "status": "ok",
-      "seconds": 7
+      "seconds": 5
     },
     "sarima": {
       "status": "ok",
-      "seconds": 164
+      "seconds": 114
     }
   }
 }
